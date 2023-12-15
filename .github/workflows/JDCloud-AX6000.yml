@@ -25,9 +25,9 @@ env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: hanwckf/JDCloud-AX6000/.config
-  DIY_P1_SH: hanwckf/JDCloud-AX6000/diy-part1.sh
-  DIY_P2_SH: hanwckf/JDCloud-AX6000/diy-part2.sh
+  CONFIG_FILE: JDCloud-AX6000/.config
+  DIY_P1_SH: JDCloud-AX6000/diy-part1.sh
+  DIY_P2_SH: JDCloud-AX6000/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
