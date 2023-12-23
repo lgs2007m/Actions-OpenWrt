@@ -114,15 +114,15 @@ jobs:
     - name: 设置是否使用mtwifi-cfg无线配置界面
       if: github.event.inputs.MTWIFI_CFG == 'false'
       run: |
-      	sed -i 's/CONFIG_PACKAGE_luci-app-mtwifi-cfg=y/CONFIG_PACKAGE_luci-app-mtk=y/g' openwrt/.config
-      	sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' openwrt/.config
-      	sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' openwrt/.config
-      	sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' openwrt/.config
+        sed -i 's/CONFIG_PACKAGE_luci-app-mtwifi-cfg=y/CONFIG_PACKAGE_luci-app-mtk=y/g' openwrt/.config
+        sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' openwrt/.config
+        sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' openwrt/.config
+        sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' openwrt/.config
 
     - name: 设置是否编译dockerman
       if: github.event.inputs.DOCKERMAN == 'false'
       run: |
-      	sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' openwrt/.config
+        sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' openwrt/.config
 
     - name: SSH链接管理
       uses: P3TERX/ssh2actions@v1.0.0
