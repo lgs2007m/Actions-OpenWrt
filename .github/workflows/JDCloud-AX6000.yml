@@ -119,7 +119,7 @@ jobs:
       	sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' openwrt/.config
       	sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' openwrt/.config
 
-    - name: 设置是否编译DOCKERMAN
+    - name: 设置是否编译dockerman
       if: github.event.inputs.DOCKERMAN == 'false'
       run: |
       	sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' openwrt/.config
