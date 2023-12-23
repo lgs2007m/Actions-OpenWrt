@@ -140,7 +140,7 @@ jobs:
         fi
 
     - name: 设置eMMC是否使用52MHz频率(运行则是，不运行则否)
-      if: github.event.inputs.EMMC_52MHZ == 'ture'
+      if: github.event.inputs.EMMC_52MHZ == 'true'
       run: |
         cd openwrt
         sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.DTS_FILE }}"
