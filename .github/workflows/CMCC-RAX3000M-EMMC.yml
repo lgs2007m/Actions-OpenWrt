@@ -120,15 +120,17 @@ jobs:
     - name: 设置是否使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
       if: github.event.inputs.MTWIFI_CFG == 'false'
       run: |
-        sed -i 's/CONFIG_PACKAGE_luci-app-mtwifi-cfg=y/CONFIG_PACKAGE_luci-app-mtk=y/g' openwrt/.config
-        sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' openwrt/.config
-        sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' openwrt/.config
-        sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' openwrt/.config
+        cd openwrt
+        sed -i 's/CONFIG_PACKAGE_luci-app-mtwifi-cfg=y/CONFIG_PACKAGE_luci-app-mtk=y/g' .config
+        sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' .config
+        sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' .config
+        sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' .config
 
     - name: 设置是否编译dockerman(不运行则是，运行则否)
       if: github.event.inputs.DOCKERMAN == 'false'
       run: |
-        sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' openwrt/.config
+        cd openwrt
+        sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' .config
 
     - name: 设置eMMC使用highspeed
       run: |
@@ -176,7 +178,7 @@ jobs:
         else
                 echo "WIFI_INTERFACE=" >> $GITHUB_ENV
         fi
-        if grep -q 'CONFIG_PACKAGE_luci-app-dockerman=y' openwrt/.config; then
+        if grep -q 'CONFIG_PACKAGE_luci-app-dockerman=y' .config; then
                 echo "BUILD_DOCKERMAN=-docker" >> $GITHUB_ENV
         else
                 echo "BUILD_DOCKERMAN=" >> $GITHUB_ENV
@@ -215,12 +217,12 @@ jobs:
         touch release.txt
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ '${{ env.WIFI_INTERFACE }}' == 'mtwifi-cfg' ]]; then
+        if [[ '${{ env.WIFI_INTERFACE }}' == '-mtwifi-cfg' ]]; then
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
         else
                 echo "- 使用 mtk-sdk luci-app-mtk 无线控制界面" >> release.txt
         fi
-        if [[ '${{ env.BUILD_DOCKERMAN }}' == 'docker' ]]; then
+        if [[ '${{ env.BUILD_DOCKERMAN }}' == '-docker' ]]; then
                 echo "- 已编译luci-app-dockerman" >> release.txt
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
