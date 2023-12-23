@@ -145,7 +145,7 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        # make -j$(nproc) || make -j1 || make -j1 V=s
+        make -j$(nproc) || make -j1 || make -j1 V=s
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=$(cat DEVICE_NAME)" >> $GITHUB_ENV
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*TARGET_.*_(.*)_DEVICE_.*=y/\1/' > TARGET_NAME
@@ -192,7 +192,7 @@ jobs:
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         touch release.txt
-        echo "- 使用源码：${{ env.EPO_URL }}" >> release.txt
+        echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
         if [[ "${{ env.WIFI_INTERFACE }}" == 'mtwifi-cfg' ]]; then
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
