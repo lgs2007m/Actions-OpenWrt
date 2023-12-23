@@ -7,16 +7,28 @@
 # https://github.com/P3TERX/Actions-OpenWrt
 # Description: Build OpenWrt using GitHub Actions
 #
-###############改名字##############
-name: CMCC-RAX3000M-EMMC-52MHz-hanwckf
-
-permissions: write-all
-# 开启写权限，防止无法上传到release
+###############手动修改##############
+name: CMCC-RAX3000M-EMMC-hanwckf
 
 on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
+      MTWIFI_CFG:
+        description: 'Use mtwifi-cfg'
+        required: true
+        default: false
+        type: boolean
+      DOCKERMAN:
+        description: 'Build luci-app-dockerman'
+        required: true
+        default: true
+        type: boolean
+      EMMC_52MHZ:
+        description: 'eMMC use 52MHz max-frequency'
+        required: true
+        default: false
+        type: boolean
       ssh:
         description: 'SSH connection to Actions'
         required: false
@@ -25,22 +37,26 @@ on:
 #    - cron: 0 16 * * *
 
 env:
+  ###############手动修改##############
+  OPENWRT_NAME: hanwckf
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: CMCC-RAX3000M-EMMC/.config
+  DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
+  CONFIG_FILE: CMCC-RAX3000M-EMMC/.mtwifi-cfg.config
   DIY_P1_SH: CMCC-RAX3000M-EMMC/diy-part1.sh
   DIY_P2_SH: CMCC-RAX3000M-EMMC/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-  ###############改名字##############
-  OPENWRT_NAME: hanwckf-52MHz
 
 jobs:
   build:
     runs-on: ubuntu-20.04
+
+    permissions:
+      contents: write
     
     steps:
     - name: 检查项目分支
@@ -86,8 +102,6 @@ jobs:
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
         chmod +x $DIY_P1_SH
         cd openwrt
-        sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
-        sed -i 's/max-frequency = <26000000>/max-frequency = <52000000>/g' target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
         $GITHUB_WORKSPACE/$DIY_P1_SH
         
     - name: 更新 & 安装 feeds
@@ -102,7 +116,33 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        
+
+    - name: 设置是否使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
+      if: github.event.inputs.MTWIFI_CFG == 'false'
+      run: |
+        sed -i 's/CONFIG_PACKAGE_luci-app-mtwifi-cfg=y/CONFIG_PACKAGE_luci-app-mtk=y/g' openwrt/.config
+        sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' openwrt/.config
+        sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' openwrt/.config
+        sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' openwrt/.config
+
+    - name: 设置是否编译dockerman(不运行则是，运行则否)
+      if: github.event.inputs.DOCKERMAN == 'false'
+      run: |
+        sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' openwrt/.config
+
+    - name: 设置eMMC使用highspeed
+      run: |
+        cd openwrt
+        if ! grep -q 'cap-mmc-highspeed' "${{ env.DTS_FILE }}"; then
+                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.DTS_FILE }}"
+        fi
+
+    - name: 设置eMMC是否使用52MHz频率(运行则是，不运行则否)
+      if: github.event.inputs.EMMC_52MHZ == 'ture'
+      run: |
+        cd openwrt
+        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.DTS_FILE }}"
+
     - name: SSH链接管理
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -129,6 +169,20 @@ jobs:
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=$(cat DEVICE_NAME)" >> $GITHUB_ENV
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*TARGET_.*_(.*)_DEVICE_.*=y/\1/' > TARGET_NAME
         [ -s TARGET_NAME ] && echo "TARGET_NAME=$(cat TARGET_NAME)" >> $GITHUB_ENV
+        sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
+        [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
+        if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
+                echo "WIFI_INTERFACE=-mtwifi-cfg" >> $GITHUB_ENV
+        else
+                echo "WIFI_INTERFACE=" >> $GITHUB_ENV
+        fi
+        if grep -q 'CONFIG_PACKAGE_luci-app-dockerman=y' openwrt/.config; then
+                echo "BUILD_DOCKERMAN=-docker" >> $GITHUB_ENV
+        else
+                echo "BUILD_DOCKERMAN=" >> $GITHUB_ENV
+        fi
+        echo $(( $(grep -oP "max-frequency = <\K[0-9]*" "${{ env.DTS_FILE }}") / 1000000 )) > EMMC_MHZ
+        [ -s EMMC_MHZ ] && echo "EMMC_MHZ=-$(cat EMMC_MHZ)MHz" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
@@ -143,34 +197,44 @@ jobs:
         cd openwrt/bin/targets/*/*
         rm -rf packages
         sudo -E apt-get -qq install rename
-        rename 's/.*${{ env.TARGET_NAME }}-/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-/' *
+        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
-    - name: 上传固件到github
+    - name: 打包上传固件到Actions Artifacts
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
         
-    - name: 生成release标签
+    - name: 生成固件Release标签
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}" >> $GITHUB_OUTPUT
         touch release.txt
-        echo "由衷感谢所有为openwrt无私奉献的大佬们" >> release.txt
-        echo " 固件下载" >> release.txt
+        echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
+        echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
+        if [[ '${{ env.WIFI_INTERFACE }}' == 'mtwifi-cfg' ]]; then
+                echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
+        else
+                echo "- 使用 mtk-sdk luci-app-mtk 无线控制界面" >> release.txt
+        fi
+        if [[ '${{ env.BUILD_DOCKERMAN }}' == 'docker' ]]; then
+                echo "- 已编译luci-app-dockerman" >> release.txt
+        else
+                echo "- 未编译luci-app-dockerman" >> release.txt
+        fi
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
         
-    - name: 发布至release
+    - name: 发布固件至Release
       uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
