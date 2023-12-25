@@ -14,6 +14,11 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
+      MAC_ORDER:
+        description: 'Use the original MAC address order'
+        required: true
+        default: false
+        type: boolean
       MTWIFI_CFG:
         description: 'Use mtwifi-cfg'
         required: true
@@ -110,6 +115,21 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+        
+    - name: 设置原厂的MAC地址顺序(运行则是，不运行则否)
+      if: github.event.inputs.MAC_ORDER == 'true'
+      run: |
+        cd openwrt
+        ## 调换lan、wan的MAC地址
+        sed -i '/jdcloud,re-cp-03)/{n; s/wan_mac=$(mmc_get_mac_binary factory 0x2a)/wan_mac=$(mmc_get_mac_binary factory 0x24)/; n; s/lan_mac=$(mmc_get_mac_binary factory 0x24)/lan_mac=$(mmc_get_mac_binary factory 0x2A)/}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
+        ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
+        echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7986-ax6000.dbdc.b0.dat
+        \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7986-ax6000.dbdc.b1.dat" > temp_insert.txt
+        ## 将文本内容写入02_network
+        sed -i '/mediatek_setup_macs()/,/\};/ {/jdcloud,re-cp-03)/ {n;n;n;r temp_insert.txt
+        }}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
 
     - name: 设置是否使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
       if: github.event.inputs.MTWIFI_CFG == 'false'
@@ -196,6 +216,11 @@ jobs:
         touch release.txt
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
+        if [[ github.event.inputs.MAC_ORDER == 'true' ]]; then
+               echo "- 修改源码 使用原厂的MAC地址顺序" >> release.txt
+        else
+               echo "- 未修改源码中的MAC地址顺序" >> release.txt
+        fi
         if [[ '${{ env.WIFI_INTERFACE }}' == '-mtwifi' ]]; then
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
         else
