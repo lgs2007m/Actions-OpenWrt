@@ -205,6 +205,8 @@ jobs:
     - name: 编译固件
       id: compile
       run: |
+        md5_file1=$(md5sum "CMCC-RAX3000M-EMMC/nx30pro_eeprom.bin" | awk '{print $1}')
+        md5_file2=$(md5sum "openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin" | awk '{print $1}')
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
@@ -219,8 +221,6 @@ jobs:
         else
                 echo "MAC_FIX=" >> $GITHUB_ENV
         fi
-        md5_file1=$(md5sum "nx30pro_eeprom.bin" | awk '{print $1}')
-        md5_file2=$(md5sum "package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin" | awk '{print $1}')
         if [ "$md5_file1" == "$md5_file2" ]; then
                 echo "EEPROM=-eeprom" >> $GITHUB_ENV
         else
