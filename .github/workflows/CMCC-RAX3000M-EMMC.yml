@@ -19,6 +19,11 @@ on:
         required: true
         default: false
         type: boolean
+      EEPROM:
+        description: 'Use nx30pro eeprom'
+        required: true
+        default: false
+        type: boolean
       MTWIFI_CFG:
         description: 'Use mtwifi-cfg'
         required: true
@@ -137,6 +142,22 @@ jobs:
         sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
         }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
 
+    - name: 设置使用nx30pro的高功率eeprom(运行则是，不运行则否)
+      if: github.event.inputs.EEPROM == 'true'
+      run: |
+        mkdir openwrt/target/linux/mediatek/mt7981/base-files/lib/firmware
+        cp CMCC-RAX3000M-EMMC/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
+        if sed -n '/mediatek_setup_macs()/,/cmcc,rax3000m-emmc)/{N;/lan_mac=\$(mmc_get_mac_binary factory/p}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network | grep -q 0x24; then
+                ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
+                echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
+                \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7981.dbdc.b0.dat
+                \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
+                \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7981.dbdc.b1.dat" > temp_insert.txt
+                ## 将文本内容写入02_network
+                sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
+                }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+        fi
+
     - name: 设置使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
       if: github.event.inputs.MTWIFI_CFG == 'false'
       run: |
@@ -198,6 +219,13 @@ jobs:
         else
                 echo "MAC_FIX=" >> $GITHUB_ENV
         fi
+        md5_file1=$(md5sum "nx30pro_eeprom.bin" | awk '{print $1}')
+        md5_file2=$(md5sum "package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin" | awk '{print $1}')
+        if [ "$md5_file1" == "$md5_file2" ]; then
+                echo "EEPROM=-eeprom" >> $GITHUB_ENV
+        else
+                echo "EEPROM=" >> $GITHUB_ENV
+        fi
         if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
                 echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
         else
@@ -224,7 +252,7 @@ jobs:
         cd openwrt/bin/targets/*/*
         rm -rf packages
         sudo -E apt-get -qq install rename
-        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
+        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
@@ -232,7 +260,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
         
     - name: 生成固件Release标签
@@ -247,6 +275,11 @@ jobs:
         else
                echo "- 未修改源码中的MAC地址顺序" >> release.txt
         fi
+        if [[ "${{ env.EEPROM }}" == '-eeprom' ]]; then
+               echo "- 使用nx30pro高功率eeprom" >> release.txt
+        else
+               echo "- 未使用nx30pro高功率eeprom" >> release.txt
+        fi
         if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
         else
@@ -258,7 +291,7 @@ jobs:
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
         echo "- eMMC使用${{ env.EMMC_MHZ }}频率" >> release.txt
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
         
     - name: 发布固件至Release
@@ -268,6 +301,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
