@@ -145,8 +145,8 @@ jobs:
     - name: 设置使用nx30pro的高功率eeprom(运行则是，不运行则否)
       if: github.event.inputs.EEPROM == 'true'
       run: |
-        mkdir openwrt/target/linux/mediatek/mt7981/base-files/lib/firmware
         cp CMCC-RAX3000M-EMMC/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
+        cd openwrt
         if sed -n '/mediatek_setup_macs()/,/cmcc,rax3000m-emmc)/{N;/lan_mac=\$(mmc_get_mac_binary factory/p}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network | grep -q 0x24; then
                 ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
                 echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
