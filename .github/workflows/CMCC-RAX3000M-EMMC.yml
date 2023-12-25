@@ -14,6 +14,11 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
+      MAC_ORDER:
+        description: 'Use the original MAC address order'
+        required: true
+        default: false
+        type: boolean
       MTWIFI_CFG:
         description: 'Use mtwifi-cfg'
         required: true
@@ -116,8 +121,23 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+        
+    - name: 设置原厂的MAC地址顺序(运行则是，不运行则否)
+      if: github.event.inputs.MAC_ORDER == 'true'
+      run: |
+        cd openwrt
+        ## 调换lan、wan的MAC地址
+        sed -i '/cmcc,rax3000m-emmc)/{n; s/lan_mac=$(mmc_get_mac_binary factory 0x24)/lan_mac=$(mmc_get_mac_binary factory 0x2A)/; n; s/wan_mac=$(mmc_get_mac_binary factory 0x2a)/wan_mac=$(mmc_get_mac_binary factory 0x24)/}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+        ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
+        echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7981.dbdc.b0.dat
+        \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7981.dbdc.b1.dat" > temp_insert.txt
+        ## 将文本内容写入02_network
+        sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
+        }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
 
-    - name: 设置是否使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
+    - name: 设置使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
       if: github.event.inputs.MTWIFI_CFG == 'false'
       run: |
         cd openwrt
@@ -126,7 +146,7 @@ jobs:
         sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' .config
         sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' .config
 
-    - name: 设置是否编译dockerman(不运行则是，运行则否)
+    - name: 设置编译dockerman(不运行则是，运行则否)
       if: github.event.inputs.DOCKERMAN == 'false'
       run: |
         cd openwrt
@@ -173,6 +193,11 @@ jobs:
         [ -s TARGET_NAME ] && echo "TARGET_NAME=$(cat TARGET_NAME)" >> $GITHUB_ENV
         sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
+        if sed -n '/mediatek_setup_macs()/,/cmcc,rax3000m-emmc)/{N;/lan_mac=\$(mmc_get_mac_binary factory/p}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network | grep -q 0x2A; then
+                echo "MAC_FIX=-MAC_fix" >> $GITHUB_ENV
+        else
+                echo "MAC_FIX=" >> $GITHUB_ENV
+        fi
         if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
                 echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
         else
@@ -217,12 +242,17 @@ jobs:
         touch release.txt
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ '${{ env.WIFI_INTERFACE }}' == '-mtwifi' ]]; then
+        if [[ "${{ env.MAC_FIX }}" == '-MAC_fix' ]]; then
+               echo "- 修改源码 使用原厂的MAC地址顺序" >> release.txt
+        else
+               echo "- 未修改源码中的MAC地址顺序" >> release.txt
+        fi
+        if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
         else
                 echo "- 使用 mtk-sdk luci-app-mtk 无线控制界面" >> release.txt
         fi
-        if [[ '${{ env.BUILD_DOCKERMAN }}' == '-docker' ]]; then
+        if [[ "${{ env.BUILD_DOCKERMAN }}" == '-docker' ]]; then
                 echo "- 已编译luci-app-dockerman" >> release.txt
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
