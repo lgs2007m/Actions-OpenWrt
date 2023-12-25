@@ -216,7 +216,7 @@ jobs:
         touch release.txt
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ github.event.inputs.MAC_ORDER == true ]]; then
+        if ${{ github.event.inputs.MAC_ORDER }}; then
                echo "- 修改源码 使用原厂的MAC地址顺序" >> release.txt
         else
                echo "- 未修改源码中的MAC地址顺序" >> release.txt
