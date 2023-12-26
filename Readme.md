@@ -4,7 +4,7 @@
 
 #### 237大佬mt798x闭源仓库- [padavanonly/immortalwrt-mt798x](https://github.com/padavanonly/immortalwrt-mt798x).
 
-#### hanwckf大佬的mt798x uboot仓库- [hanwckf/bl-mt798x](https://github.com/hanwckf/bl-mt798x).
+#### hanwckf大佬mt798x uboot仓库- [hanwckf/bl-mt798x](https://github.com/hanwckf/bl-mt798x).
 
 
 ## 脚本需要使用对应文件夹中的mtwifi-cfg.config配置文件，该配置文件是开启mtwifi-cf和编译luci-app-dockerman的。
