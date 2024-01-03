@@ -23,8 +23,8 @@
 - #### 2. Use GSW switch driver (non-DSA)
 该选项默认关闭，即不适用GSW交换机驱动，使用DSA交换机驱动，需要开启请打钩。  
 GSW：Gigabit Switch swconfig 模式，有交换机配置插件，不过JDCloud-AX6000的WAN不接在交换机上，所以WAN不支持在交换机配置插件中设置VLAN。  
-DSA：Distributed Switch Architecture 分布式交换架构模式，DSA去除了交换机配置插件。  
-原厂固件和hanwckf大佬源码中JDCloud-AX6000都是使用DSA的，区别我也不是很懂，可以参考OpenWrt社区资料。  
+DSA：Distributed Switch Architecture 分布式交换架构模式，DSA去除了交换机配置插件，但在“网口”-“接口”-“设备”选项卡中的br-lan设备中的网桥VLAN过滤中可以查看网口状态设置VLAN。  
+原厂固件和hanwckf大佬源码中JDCloud-AX6000都是使用DSA的，建议使用DSA。两者区别可以参考OpenWrt社区资料。  
 
 OpenWrt社区资料：  
 https://openwrt.org/docs/guide-user/network/dsa/converting-to-dsa  
