@@ -19,6 +19,11 @@ on:
         required: true
         default: false
         type: boolean
+      GSW:
+        description: 'Use GSW switch driver (non-DSA)'
+        required: true
+        default: false
+        type: boolean
       MTWIFI_CFG:
         description: 'Use mtwifi-cfg'
         required: true
@@ -116,7 +121,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
-    - name: 设置原厂的MAC地址顺序(运行则是，不运行则否)
+    - name: 设置原厂MAC地址顺序(运行则是，不运行则否)
       if: github.event.inputs.MAC_ORDER == 'true'
       run: |
         cd openwrt
@@ -131,7 +136,16 @@ jobs:
         sed -i '/mediatek_setup_macs()/,/\};/ {/jdcloud,re-cp-03)/ {n;n;n;r temp_insert.txt
         }}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
 
-    - name: 设置是否使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
+    - name: 设置使用GSW交换机驱动（非DSA）(运行则是，不运行则否)
+      if: github.event.inputs.GSW == 'true'
+      run: |
+        cp JDCloud-AX6000/mt7986a-gsw-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
+        cd openwrt
+        sed -i '/jdcloud,re-cp-03)/ {n; /lan1 lan2 lan3 lan4/ {s/lan1 lan2 lan3 lan4/eth0/; a\
+        \t\tucidef_add_switch "switch0" "1:lan" "2:lan" "3:lan" "4:lan" "6u@eth0"
+        }}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
+
+    - name: 设置使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
       if: github.event.inputs.MTWIFI_CFG == 'false'
       run: |
         cd openwrt
@@ -140,7 +154,7 @@ jobs:
         sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' .config
         sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' .config
 
-    - name: 设置是否编译dockerman(不运行则是，运行则否)
+    - name: 设置编译dockerman(不运行则是，运行则否)
       if: github.event.inputs.DOCKERMAN == 'false'
       run: |
         cd openwrt
@@ -174,10 +188,15 @@ jobs:
         [ -s TARGET_NAME ] && echo "TARGET_NAME=$(cat TARGET_NAME)" >> $GITHUB_ENV
         sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
-        if sed -n '/mediatek_setup_macs()/,/jdcloud,re-cp-03)/{N;/wan_mac=\$(mmc_get_mac_binary factory/p}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network | grep -q 0x24; then
+        if sed -n '/jdcloud,re-cp-03)/,/;;/p' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network | grep -q 'wan_mac=$(mmc_get_mac_binary factory 0x24)'; then
                 echo "MAC_FIX=-MAC_fix" >> $GITHUB_ENV
         else
                 echo "MAC_FIX=" >> $GITHUB_ENV
+        fi
+        if sed -n '/jdcloud,re-cp-03)/,/;;/p' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network | grep -q 'ucidef_add_switch "switch0"'; then
+                echo "SET_GSW=-gsw" >> $GITHUB_ENV
+        else
+                echo "SET_GSW=" >> $GITHUB_ENV
         fi
         if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
                 echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
@@ -203,7 +222,7 @@ jobs:
         cd openwrt/bin/targets/*/*
         rm -rf packages
         sudo -E apt-get -qq install rename
-        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
+        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SET_GSW }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
@@ -211,7 +230,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SET_GSW }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
         
     - name: 生成固件Release标签
@@ -226,6 +245,11 @@ jobs:
         else
                echo "- 未修改源码中的MAC地址顺序" >> release.txt
         fi
+        if [[ "${{ env.SET_GSW }}" == '-gsw' ]]; then
+               echo "- 使用GSW交换机驱动（非DSA）" >> release.txt
+        else
+               echo "- 使用DSA交换机驱动" >> release.txt
+        fi
         if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
         else
@@ -236,7 +260,7 @@ jobs:
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SET_GSW }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
         
     - name: 发布固件至Release
@@ -246,6 +270,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SET_GSW }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt

@@ -11,6 +11,7 @@
 ---
 ## JDCloud-AX6000 workflow 手动运行可选项：
 - [ ] Use the original MAC address order
+- [ ] Use GSW switch driver (non-DSA)
 - [ ] Use mtwifi-cfg
 - [x] Build luci-app-dockerman
 
@@ -19,13 +20,23 @@
 目前源码的WAN、LAN的MAC地址读取位置与原厂相反，所以WAN、LAN与原厂MAC是反的。同时目前的WiFi MAC最后一个字节重启后会变。  
 开启该选项后可以恢复WAN、LAN原厂顺序，同时将WiFi MAC写到对应dat文件中，以便固定WiFi MAC。
 
-- #### 2. Use mtwifi-cfg
+- #### 2. Use GSW switch driver (non-DSA)
+该选项默认关闭，即不适用GSW交换机驱动，使用DSA交换机驱动，需要开启请打钩。  
+GSW：Gigabit Switch swconfig 模式，有交换机配置插件，不过JDCloud-AX6000的WAN不接在交换机上，所以WAN不支持在交换机配置插件中设置VLAN。  
+DSA：Distributed Switch Architecture 分布式交换架构模式，DSA去除了交换机配置插件。  
+原厂固件和hanwckf大佬源码中JDCloud-AX6000都是使用DSA的，区别我也不是很懂，可以参考OpenWrt社区资料。  
+
+OpenWrt社区资料：  
+https://openwrt.org/docs/guide-user/network/dsa/converting-to-dsa  
+https://openwrt.org/docs/guide-user/network/dsa/dsa-mini-tutorial  
+
+- #### 3. Use mtwifi-cfg
 该选项默认关闭，即不使用mtwifi-cfg，使用luci-app-mtk，需要开启请打钩。  
 mtwifi-cfg：为mtwifi设计的无线配置工具，兼容openwrt原生luci和netifd，可调整无线驱动的参数较少，配置界面美观友好，由于是新开发的工具，可能存在一些问题。  
 luci-app-mtk：源自mtk-sdk提供的配置工具，需要配合wifi-profile脚本使用，可调整无线驱动的几乎所有参数，配置界面较为简陋。  
 区别详见大佬的博客[cmi.hanwckf.top](https://cmi.hanwckf.top/p/immortalwrt-mt798x/#mtwifi%E6%97%A0%E7%BA%BF%E9%85%8D%E7%BD%AE%E5%B7%A5%E5%85%B7%E8%AF%B4%E6%98%8E)
 
-- #### 3. Build luci-app-dockerman
+- #### 4. Build luci-app-dockerman
 该选项默认开启，即编译dockerman，需要关闭请取消打钩。  
 需要mtwifi-cfg.config配置文件中含luci-app-dockerman。
 
