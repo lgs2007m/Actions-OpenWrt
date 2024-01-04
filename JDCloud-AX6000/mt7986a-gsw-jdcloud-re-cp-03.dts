@@ -136,6 +136,13 @@
 	};
 };
 
+&hnat {
+	mtketh-wan = "eth1";
+	mtketh-lan = "eth0";
+	mtketh-max-gmac = <2>;
+	status = "okay";
+};
+
 &gsw {
 	mediatek,mdio = <&mdio>;
 	mediatek,portmap = "lllll";
@@ -166,13 +173,6 @@
 			full-duplex;
 		};
 	};
-};
-
-&hnat {
-	mtketh-wan = "eth1";
-	mtketh-lan = "eth0";
-	mtketh-max-gmac = <2>;
-	status = "okay";
 };
 
 &mmc0 {
