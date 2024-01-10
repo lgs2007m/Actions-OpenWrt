@@ -71,6 +71,7 @@ luci-app-mtk：源自mtk-sdk提供的配置工具，需要配合wifi-profile脚�
 
 - #### 5. eMMC use 52MHz max-frequency
 该选项默认关闭，即不设置eMMC频率为52MHz，需要开启请打钩。  
+原厂机子选用的eMMC颗粒品质不太行，不能运行在MT7981B eMMC最高的52MHz频率，所以原厂固件使用的是26MHz频率。  
 yml脚本中固定设置了eMMC使用highspeed，以便达到设置的26MHz、52MHz。  
 注意：除非更换过eMMC，不然不建议使用52MHz，基本跑一段时间都会出问题。老实使用26MHz即可。
 
