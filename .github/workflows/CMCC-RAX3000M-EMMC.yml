@@ -17,17 +17,17 @@ on:
       MAC_ORDER:
         description: 'Use the original MAC address order'
         required: true
-        default: false
+        default: true
         type: boolean
       EEPROM:
         description: 'Use nx30pro eeprom'
         required: true
-        default: false
+        default: true
         type: boolean
       MTWIFI_CFG:
         description: 'Use mtwifi-cfg'
         required: true
-        default: false
+        default: true
         type: boolean
       DOCKERMAN:
         description: 'Build luci-app-dockerman'
