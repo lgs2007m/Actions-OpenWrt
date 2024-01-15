@@ -38,9 +38,14 @@ mmcblk0p11_fwk2.bin
 ```
 fdisk -x /dev/mmcblk0
 ```
-识别到后安装mmc-utils，输入命令写入bl2和并设置ext_csd信息从boot0启动：  
+识别到后开启超级用户执行权限并安装mmc-utils：  
 ```
 sudo -i
+apt install mmc-utils
+```
+输入命令写入bl2和并设置ext_csd信息从boot0启动：  
+注：boot0_bl2.bin文件路径修改为文件所在路径。  
+```
 echo 0 > /sys/block/mmcblk0boot0/force_ro
 dd if=boot0_bl2.bin of=/dev/mmcblk0boot0
 echo 1 > /sys/block/mmcblk0boot0/force_ro
@@ -62,6 +67,7 @@ Boot bus Conditions [BOOT_BUS_CONDITIONS: 0x00]
 H/W reset function [RST_N_FUNCTION]: 0x01
 ```
 接着合并的eMMC镜像mmcblk0p0-11.bin写入/dev/mmcblk0：  
+注：mmcblk0p0-11.bin文件路径修改为文件所在路径。  
 ```
 dd if=mmcblk0p0-11.bin of=/dev/mmcblk0 bs=1M status=progress oflag=direct
 ```
