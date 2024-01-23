@@ -29,6 +29,11 @@ on:
         required: true
         default: true
         type: boolean
+      FW:
+        description: 'Use JDCloud stock fw'
+        required: true
+        default: true
+        type: boolean
       DOCKERMAN:
         description: 'Build luci-app-dockerman'
         required: true
@@ -153,13 +158,22 @@ jobs:
         sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' .config
         sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' .config
         sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' .config
-
+        
+    - name: 设置使用京东云百里原厂firmware(运行则是，不运行则否)
+      if: github.event.inputs.FW == 'true'
+      run: |
+        cp -r JDCloud-AX6000/stock-fw/mt7986-mt_wifi openwrt/package/mtk/drivers/mt_wifi/files
+        cp -r JDCloud-AX6000/stock-fw/mt7986-warp openwrt/package/mtk/drivers/warp/files
+        cd openwrt
+        sed -i 's/^MT7986_FW_DIR := mt7986-fw.*/MT7986_FW_DIR := mt7986-mt_wifi/g' package/mtk/drivers/mt_wifi/Makefile
+        sed -i 's/^MT7986_NEW_WOFW_DIR := mt7986-fw.*/MT7986_NEW_WOFW_DIR := mt7986-warp/g' package/mtk/drivers/warp/Makefile
+        
     - name: 设置编译dockerman(不运行则是，运行则否)
       if: github.event.inputs.DOCKERMAN == 'false'
       run: |
         cd openwrt
         sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' .config
-
+        
     - name: SSH链接管理
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -202,6 +216,12 @@ jobs:
                 echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
         else
                 echo "WIFI_INTERFACE=" >> $GITHUB_ENV
+        fi
+        if [ -f "package/mtk/drivers/mt_wifi/files/mt7986-mt_wifi/7986_WACPU_RAM_CODE_release.bin" ] && \
+           [ -f "package/mtk/drivers/warp/files/mt7986-warp/7986_WOCPU0_RAM_CODE_release.bin" ];then
+                echo "STOCK_FW=-fw" >> $GITHUB_ENV
+        else
+                echo "STOCK_FW=" >> $GITHUB_ENV
         fi
         if grep -q 'CONFIG_PACKAGE_luci-app-dockerman=y' .config; then
                 echo "BUILD_DOCKERMAN=-docker" >> $GITHUB_ENV
@@ -254,6 +274,11 @@ jobs:
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
         else
                 echo "- 使用 mtk-sdk luci-app-mtk 无线控制界面" >> release.txt
+        fi
+        if [[ "${{ env.STOCK_FW }}" == '-fw' ]]; then
+                echo "- 使用京东云百里原厂的firmware" >> release.txt
+        else
+                echo "- 使用源码的firmware" >> release.txt
         fi
         if [[ "${{ env.BUILD_DOCKERMAN }}" == '-docker' ]]; then
                 echo "- 已编译luci-app-dockerman" >> release.txt
