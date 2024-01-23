@@ -13,6 +13,7 @@
 - [x] Use the original MAC address order
 - [ ] Use GSW switch driver (non-DSA)
 - [x] Use mtwifi-cfg
+- [x] Use JDCloud stock firmware
 - [x] Build luci-app-dockerman
 
 - #### 1. Use the original MAC address order
@@ -36,7 +37,11 @@ mtwifi-cfg：为mtwifi设计的无线配置工具，兼容openwrt原生luci和ne
 luci-app-mtk：源自mtk-sdk提供的配置工具，需要配合wifi-profile脚本使用，可调整无线驱动的几乎所有参数，配置界面较为简陋。  
 区别详见大佬的博客[cmi.hanwckf.top](https://cmi.hanwckf.top/p/immortalwrt-mt798x/#mtwifi%E6%97%A0%E7%BA%BF%E9%85%8D%E7%BD%AE%E5%B7%A5%E5%85%B7%E8%AF%B4%E6%98%8E)
 
-- #### 4. Build luci-app-dockerman
+- #### 4. Use JDCloud stock firmware
+该选项默认开启，即使用京东云百里原厂无线mt_wifi、warp的firmware，需要使用源码的firmware请取消打钩。
+需要mtwifi-cfg.config配置文件中开启CONFIG_MTK_MT7986_NEW_FW=y和CONFIG_WARP_NEW_FW=y。
+
+- #### 5. Build luci-app-dockerman
 该选项默认开启，即编译dockerman，不需要请取消打钩。  
 需要mtwifi-cfg.config配置文件中含luci-app-dockerman。
 

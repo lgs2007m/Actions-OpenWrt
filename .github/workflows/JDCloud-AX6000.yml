@@ -30,7 +30,7 @@ on:
         default: true
         type: boolean
       FW:
-        description: 'Use JDCloud stock fw'
+        description: 'Use JDCloud stock firmware'
         required: true
         default: true
         type: boolean
@@ -162,8 +162,8 @@ jobs:
     - name: 设置使用京东云百里原厂firmware(运行则是，不运行则否)
       if: github.event.inputs.FW == 'true'
       run: |
-        cp -r JDCloud-AX6000/stock-fw/mt7986-mt_wifi openwrt/package/mtk/drivers/mt_wifi/files
-        cp -r JDCloud-AX6000/stock-fw/mt7986-warp openwrt/package/mtk/drivers/warp/files
+        cp -r JDCloud-AX6000/stock-firmware/mt7986-mt_wifi openwrt/package/mtk/drivers/mt_wifi/files
+        cp -r JDCloud-AX6000/stock-firmware/mt7986-warp openwrt/package/mtk/drivers/warp/files
         cd openwrt
         sed -i 's/^MT7986_FW_DIR := mt7986-fw.*/MT7986_FW_DIR := mt7986-mt_wifi/g' package/mtk/drivers/mt_wifi/Makefile
         sed -i 's/^MT7986_NEW_WOFW_DIR := mt7986-fw.*/MT7986_NEW_WOFW_DIR := mt7986-warp/g' package/mtk/drivers/warp/Makefile
