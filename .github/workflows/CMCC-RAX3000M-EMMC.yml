@@ -283,9 +283,9 @@ jobs:
         fi
         echo "- eMMC使用${{ env.EMMC_MHZ }}频率" >> release.txt
         if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
-                echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
+                echo "- 使用hanwckf mtwifi-cfg原生luci无线配置工具" >> release.txt
         else
-                echo "- 使用 mtk-sdk luci-app-mtk 无线控制界面" >> release.txt
+                echo "- 使用mtk-sdk luci-app-mtk无线配置工具" >> release.txt
         fi
         if [[ "${{ env.BUILD_DOCKERMAN }}" == '-docker' ]]; then
                 echo "- 已编译luci-app-dockerman" >> release.txt
