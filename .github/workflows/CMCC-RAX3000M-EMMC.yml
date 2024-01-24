@@ -24,18 +24,18 @@ on:
         required: true
         default: true
         type: boolean
-      MTWIFI_CFG:
-        description: 'Use mtwifi-cfg'
-        required: true
-        default: true
-        type: boolean
-      DOCKERMAN:
-        description: 'Build luci-app-dockerman'
-        required: true
-        default: true
-        type: boolean
       EMMC_52MHZ:
         description: 'eMMC use 52MHz max-frequency'
+        required: true
+        default: false
+        type: boolean
+      APP_MTK:
+        description: 'Use luci-app-mtk wifi config'
+        required: true
+        default: false
+        type: boolean
+      NO_DOCKERMAN:
+        description: 'Not build luci-app-dockerman'
         required: true
         default: false
         type: boolean
@@ -127,7 +127,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
-    - name: 设置原厂的MAC地址顺序(运行则是，不运行则否)
+    - name: 使用原厂MAC地址顺序
       if: github.event.inputs.MAC_ORDER == 'true'
       run: |
         cd openwrt
@@ -141,8 +141,21 @@ jobs:
         ## 将文本内容写入02_network
         sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
         }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
-
-    - name: 设置使用nx30pro的高功率eeprom(运行则是，不运行则否)
+        
+    - name: eMMC使用highspeed
+      run: |
+        cd openwrt
+        if ! grep -q 'cap-mmc-highspeed' "${{ env.DTS_FILE }}"; then
+                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.DTS_FILE }}"
+        fi
+        
+    - name: eMMC使用52MHz频率
+      if: github.event.inputs.EMMC_52MHZ == 'true'
+      run: |
+        cd openwrt
+        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.DTS_FILE }}"
+        
+    - name: 使用nx30pro的高功率eeprom
       if: github.event.inputs.EEPROM == 'true'
       run: |
         cp CMCC-RAX3000M-EMMC/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
@@ -158,35 +171,22 @@ jobs:
         sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
         }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
         fi
-
-    - name: 设置使用mtwifi-cfg无线配置界面(不运行则是，运行则否)
-      if: github.event.inputs.MTWIFI_CFG == 'false'
+        
+    - name: 使用luci-app-mtk无线配置
+      if: github.event.inputs.APP_MTK == 'true'
       run: |
         cd openwrt
         sed -i 's/CONFIG_PACKAGE_luci-app-mtwifi-cfg=y/CONFIG_PACKAGE_luci-app-mtk=y/g' .config
         sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' .config
         sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' .config
         sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' .config
-
-    - name: 设置编译dockerman(不运行则是，运行则否)
-      if: github.event.inputs.DOCKERMAN == 'false'
+        
+    - name: 取消编译dockerman
+      if: github.event.inputs.NO_DOCKERMAN == 'true'
       run: |
         cd openwrt
         sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' .config
-
-    - name: 设置eMMC使用highspeed
-      run: |
-        cd openwrt
-        if ! grep -q 'cap-mmc-highspeed' "${{ env.DTS_FILE }}"; then
-                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.DTS_FILE }}"
-        fi
-
-    - name: 设置eMMC是否使用52MHz频率(运行则是，不运行则否)
-      if: github.event.inputs.EMMC_52MHZ == 'true'
-      run: |
-        cd openwrt
-        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.DTS_FILE }}"
-
+        
     - name: SSH链接管理
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -227,6 +227,8 @@ jobs:
         else
                 echo "EEPROM=" >> $GITHUB_ENV
         fi
+        echo $(( $(grep -oP "max-frequency = <\K[0-9]*" "${{ env.DTS_FILE }}") / 1000000 )) > EMMC_MHZ
+        [ -s EMMC_MHZ ] && echo "EMMC_MHZ=$(cat EMMC_MHZ)MHz" >> $GITHUB_ENV
         if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
                 echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
         else
@@ -237,8 +239,6 @@ jobs:
         else
                 echo "BUILD_DOCKERMAN=" >> $GITHUB_ENV
         fi
-        echo $(( $(grep -oP "max-frequency = <\K[0-9]*" "${{ env.DTS_FILE }}") / 1000000 )) > EMMC_MHZ
-        [ -s EMMC_MHZ ] && echo "EMMC_MHZ=$(cat EMMC_MHZ)MHz" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
@@ -281,6 +281,7 @@ jobs:
         else
                echo "- 未使用nx30pro高功率eeprom" >> release.txt
         fi
+        echo "- eMMC使用${{ env.EMMC_MHZ }}频率" >> release.txt
         if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
                 echo "- 使用 hanwckf mtwifi-cfg 原生luci无线控制界面" >> release.txt
         else
@@ -291,7 +292,6 @@ jobs:
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
-        echo "- eMMC使用${{ env.EMMC_MHZ }}频率" >> release.txt
         echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
         
