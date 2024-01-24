@@ -21,7 +21,9 @@
 
 - #### 2. Use JDCloud stock firmware
 该选项默认开启，即使用京东云百里AX6000原厂固件提取的无线mt_wifi、warp的firmware，需要使用源码的firmware请取消打钩。  
-.mtwifi-cfg.config配置文件中已设置使用新的无线firmware：CONFIG_MTK_MT7986_NEW_FW=y、CONFIG_WARP_NEW_FW=y。  
+.mtwifi-cfg.config配置文件中已设置使用新的无线firmware：  
+CONFIG_MTK_MT7986_NEW_FW=y  
+CONFIG_WARP_NEW_FW=y  
 
 - #### 3. Use GSW switch driver (non-DSA)
 该选项默认关闭，即按源码DTS中MT7531交换机的设置使用DSA交换机驱动，需要使用GSW交换机驱动请打钩。  
@@ -35,12 +37,16 @@ DSA：Distributed Switch Architecture 分布式交换架构模式，DSA去除了
 mtwifi-cfg：为mtwifi设计的无线配置工具，兼容openwrt原生luci和netifd，可调整无线驱动的参数较少，配置界面美观友好，由于是新开发的工具，可能存在一些问题。  
 luci-app-mtk：源自mtk-sdk提供的配置工具，需要配合wifi-profile脚本使用，可调整无线驱动的几乎所有参数，配置界面较为简陋。  
 区别详见大佬的博客[mtwifi无线配置工具说明](https://cmi.hanwckf.top/p/immortalwrt-mt798x/#mtwifi%E6%97%A0%E7%BA%BF%E9%85%8D%E7%BD%AE%E5%B7%A5%E5%85%B7%E8%AF%B4%E6%98%8E)  
-.mtwifi-cfg.config配置文件中已设置使用mtwifi-cfg配置工具：CONFIG_PACKAGE_luci-app-mtwifi-cfg=y、CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y、CONFIG_PACKAGE_mtwifi-cfg=y、
-CONFIG_PACKAGE_lua-cjson=y。  
+.mtwifi-cfg.config配置文件中已设置使用mtwifi-cfg配置工具：  
+CONFIG_PACKAGE_luci-app-mtwifi-cfg=y  
+CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y  
+CONFIG_PACKAGE_mtwifi-cfg=y  
+CONFIG_PACKAGE_lua-cjson=y  
 
 - #### 5. Not build luci-app-dockerman
 该选项默认关闭，即按.mtwifi-cfg.config配置文件编译dockerman，不需要编译dockerman请打钩。  
-.mtwifi-cfg.config配置文件中已设置编译dockerman：CONFIG_PACKAGE_luci-app-dockerman=y。  
+.mtwifi-cfg.config配置文件中已设置编译dockerman：  
+CONFIG_PACKAGE_luci-app-dockerman=y  
 
 ---
 ## CMCC-RAX3000M-EMMC workflow 手动运行可选项：
@@ -72,12 +78,16 @@ yml脚本中固定设置了eMMC使用highspeed，以达到设置的26MHz、52MHz
 mtwifi-cfg：为mtwifi设计的无线配置工具，兼容openwrt原生luci和netifd，可调整无线驱动的参数较少，配置界面美观友好，由于是新开发的工具，可能存在一些问题。  
 luci-app-mtk：源自mtk-sdk提供的配置工具，需要配合wifi-profile脚本使用，可调整无线驱动的几乎所有参数，配置界面较为简陋。  
 区别详见大佬的博客[mtwifi无线配置工具说明](https://cmi.hanwckf.top/p/immortalwrt-mt798x/#mtwifi%E6%97%A0%E7%BA%BF%E9%85%8D%E7%BD%AE%E5%B7%A5%E5%85%B7%E8%AF%B4%E6%98%8E)  
-.mtwifi-cfg.config配置文件中已设置使用mtwifi-cfg配置工具：CONFIG_PACKAGE_luci-app-mtwifi-cfg=y、CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y、CONFIG_PACKAGE_mtwifi-cfg=y、
-CONFIG_PACKAGE_lua-cjson=y。  
+.mtwifi-cfg.config配置文件中已设置使用mtwifi-cfg配置工具：  
+CONFIG_PACKAGE_luci-app-mtwifi-cfg=y  
+CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y  
+CONFIG_PACKAGE_mtwifi-cfg=y  
+CONFIG_PACKAGE_lua-cjson=y  
 
 - #### 5. Not build luci-app-dockerman
 该选项默认关闭，即按.mtwifi-cfg.config配置文件编译dockerman，不需要编译dockerman请打钩。  
-.mtwifi-cfg.config配置文件中已设置编译dockerman：CONFIG_PACKAGE_luci-app-dockerman=y。  
+.mtwifi-cfg.config配置文件中已设置编译dockerman：  
+CONFIG_PACKAGE_luci-app-dockerman=y  
 
 ---
 ### 感谢P3TERX的Actions-OpenWrt
