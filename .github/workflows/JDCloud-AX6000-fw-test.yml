@@ -141,7 +141,7 @@ jobs:
         sed -i '/mediatek_setup_macs()/,/\};/ {/jdcloud,re-cp-03)/ {n;n;n;r temp_insert.txt
         }}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
         
-    - name: 使用京东云百里原厂无线firmware
+    - name: 使用指定无线firmware
       if: github.event.inputs.STOCK_FW == 'true'
       run: |
         cp -r JDCloud-AX6000/stock-firmware/mt7986-mt_wifi openwrt/package/mtk/drivers/mt_wifi/files
@@ -253,48 +253,3 @@ jobs:
         name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SWITCH }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
         
-    - name: 生成固件Release标签
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        touch release.txt
-        echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
-        echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ "${{ env.MAC_FIX }}" == '-MAC_fix' ]]; then
-               echo "- 修改源码 使用原厂的MAC地址顺序" >> release.txt
-        else
-               echo "- 未修改源码中的MAC地址顺序" >> release.txt
-        fi
-        if [[ "${{ env.WIFI_FW }}" == '-stock_fw' ]]; then
-                echo "- 使用京东云百里原厂的firmware" >> release.txt
-        else
-                echo "- 使用源码的firmware" >> release.txt
-        fi
-        if [[ "${{ env.SWITCH }}" == '-gsw' ]]; then
-               echo "- 使用GSW交换机驱动（非DSA）" >> release.txt
-        else
-               echo "- 使用DSA交换机驱动" >> release.txt
-        fi
-        if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
-                echo "- 使用hanwckf mtwifi-cfg原生luci无线配置工具" >> release.txt
-        else
-                echo "- 使用mtk-sdk luci-app-mtk无线配置工具" >> release.txt
-        fi
-        if [[ "${{ env.BUILD_DOCKERMAN }}" == '-docker' ]]; then
-                echo "- 已编译luci-app-dockerman" >> release.txt
-        else
-                echo "- 未编译luci-app-dockerman" >> release.txt
-        fi
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SWITCH }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
-        echo "status=success" >> $GITHUB_OUTPUT
-        
-    - name: 发布固件至Release
-      uses: softprops/action-gh-release@v1
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SWITCH }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
-        tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: release.txt
