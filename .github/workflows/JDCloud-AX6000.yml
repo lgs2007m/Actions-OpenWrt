@@ -294,8 +294,8 @@ jobs:
         else
                echo "- 未修改源码中的MAC地址顺序" >> release.txt
         fi
-        echo "- mt_wifi firmware: ${{ env.WA_FW}}" >> release.txt
-        echo "-    warp firmware: ${{ env.WO_FW }}" >> release.txt
+        echo "- mt_wifi firmware: ${{ env.WA_FW }}" >> release.txt
+        echo "- &ensp;&ensp;warp firmware: ${{ env.WO_FW }}" >> release.txt
         if [[ "${{ env.SWITCH }}" == '-gsw' ]]; then
                echo "- 使用GSW交换机驱动（非DSA）" >> release.txt
         else
