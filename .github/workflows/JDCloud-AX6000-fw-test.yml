@@ -162,8 +162,6 @@ jobs:
         
     - name: 使用指定无线firmware
       run: |
-        cp -r JDCloud-AX6000/firmware/mt_wifi/mt7986-fw-jdc openwrt/package/mtk/drivers/mt_wifi/files
-        cp -r JDCloud-AX6000/firmware/warp/mt7986-fw-jdc openwrt/package/mtk/drivers/warp/files
         cd openwrt
         if [ ${{ inputs.WA_FW }} == 'no-new-fw' ]; then
                 sed -i '/CONFIG_MTK_MT7986_NEW_FW=y/d' .config
