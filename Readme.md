@@ -9,8 +9,8 @@
 ---
 ## JDCloud-AX6000 workflow 手动运行可选项：
 - [x] Use the original MAC address order
-- Choice mt_wifi firmware
-- Choice warp firmware
+- Choose mt_wifi firmware
+- Choose warp firmware
 - [ ] Use GSW switch driver (non-DSA)
 - [ ] Use luci-app-mtk wifi config
 - [ ] Not build luci-app-dockerman
@@ -20,7 +20,7 @@
 目前源码的WAN、LAN的MAC地址读取位置与原厂相反，所以WAN、LAN的MAC较原厂MAC是反的，同时目前源码的WiFi MAC最后一个字节重启后会变。  
 开启该选项后可以恢复WAN、LAN原厂MAC顺序，同时将WiFi MAC写到无线对应dat文件中，以便固定WiFi MAC。  
 
-- #### 2. Choice mt_wifi/warp firmware
+- #### 2. Choose mt_wifi/warp firmware
 默认mt_wifi和warp使用TP XDR6088的fw-20230808，个人使用感觉无线ping丢包较少。  
 mt_wifi：  
 no-new-fw：不使用新的无线firmware，使用mt798x-7.6.6.1-src驱动中的fw-20220906  
