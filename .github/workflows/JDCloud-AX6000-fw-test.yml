@@ -19,11 +19,18 @@ on:
         required: true
         default: true
         type: boolean
-      STOCK_FW:
-        description: 'Use specified stock firmware'
+      WA_FW:
+        description: 'Choice mt_wifi firmware'
         required: true
-        default: true
-        type: boolean
+        default: 'mt7986-fw-20230808'
+        options: ['no-new-fw', 'mt7986-fw-20221208', 'mt7986-fw-jdc', 'mt7986-fw-20230421', 'mt7986-fw-20230808' , 'mt7986-fw-20231024']
+        type: choice
+      WO_FW:
+        description: 'Choice warp firmware'
+        required: true
+        default: 'mt7986-fw-20230808'
+        options: ['no-new-fw', 'mt7986-fw-20221208', 'mt7986-fw-jdc', 'mt7986-fw-20230421', 'mt7986-fw-20230808' , 'mt7986-fw-20231024']
+        type: choice
       GSW:
         description: 'Use GSW switch driver (non-DSA)'
         required: true
