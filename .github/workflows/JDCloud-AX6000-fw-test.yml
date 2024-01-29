@@ -24,7 +24,6 @@ on:
         required: true
         default: 'mt7986-fw-20230808'
         options: ['no-new-fw', 'mt7986-fw-20221208', 'mt7986-fw-jdc', 'mt7986-fw-20230421', 'mt7986-fw-20230808' , 'mt7986-fw-20231024']
-        type: choice
       WO_FW:
         description: 'Choice warp firmware'
         required: true
