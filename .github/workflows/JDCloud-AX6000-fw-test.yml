@@ -146,7 +146,7 @@ jobs:
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
     - name: 使用原厂MAC地址顺序
-      if: github.event.inputs.MAC_ORDER == 'true'
+      if: inputs.MAC_ORDER == 'true'
       run: |
         cd openwrt
         ## 调换lan、wan的MAC地址
@@ -162,11 +162,23 @@ jobs:
         
     - name: 使用指定无线firmware
       run: |
-        cp -r JDCloud-AX6000/stock-firmware/mt7986-mt_wifi openwrt/package/mtk/drivers/mt_wifi/files
-        cp -r JDCloud-AX6000/stock-firmware/mt7986-warp openwrt/package/mtk/drivers/warp/files
+        cp -r JDCloud-AX6000/firmware/mt_wifi/mt7986-fw-jdc openwrt/package/mtk/drivers/mt_wifi/files
+        cp -r JDCloud-AX6000/firmware/warp/mt7986-fw-jdc openwrt/package/mtk/drivers/warp/files
         cd openwrt
-        sed -i 's/^MT7986_FW_DIR := mt7986-fw.*/MT7986_FW_DIR := mt7986-fw-20230808/g' package/mtk/drivers/mt_wifi/Makefile
-        sed -i 's/^MT7986_NEW_WOFW_DIR := mt7986-fw.*/MT7986_NEW_WOFW_DIR := mt7986-fw-20230808/g' package/mtk/drivers/warp/Makefile
+        if [ ${{ inputs.WA_FW }} == 'no-new-fw' ]; then
+                sed -i '/CONFIG_MTK_MT7986_NEW_FW=y/d' .config
+                echo "mt_wifi: nono"
+        else
+                sed -i 's/^MT7986_FW_DIR := mt7986-fw.*/MT7986_FW_DIR := ${{inputs.WA_FW}}/g' package/mtk/drivers/mt_wifi/Makefile
+                echo "mt_wifi: yes"
+        fi
+        if [ ${{ inputs.WA_FW }} == 'no-new-fw' ]; then
+                sed -i '/CONFIG_WARP_NEW_FW=y/d' .config
+                echo "warp: nono"
+        else
+                sed -i 's/^MT7986_NEW_WOFW_DIR := mt7986-fw.*/MT7986_NEW_WOFW_DIR := ${{inputs.WO_FW}}/g' package/mtk/drivers/warp/Makefile
+                echo "warp: yes"
+        fi
         echo "mt_wifi: ${{ github.event.inputs.WA_FW }}"
         echo "mt_wifi: ${{ inputs.WA_FW }}"
         echo "mt_wifi: ${{ github.event.inputs.WO_FW }}"
