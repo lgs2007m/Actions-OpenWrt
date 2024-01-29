@@ -9,7 +9,8 @@
 ---
 ## JDCloud-AX6000 workflow 手动运行可选项：
 - [x] Use the original MAC address order
-- [x] Use JDCloud stock firmware
+- Choice mt_wifi firmware
+- Choice warp firmware
 - [ ] Use GSW switch driver (non-DSA)
 - [ ] Use luci-app-mtk wifi config
 - [ ] Not build luci-app-dockerman
@@ -19,8 +20,22 @@
 目前源码的WAN、LAN的MAC地址读取位置与原厂相反，所以WAN、LAN的MAC较原厂MAC是反的，同时目前源码的WiFi MAC最后一个字节重启后会变。  
 开启该选项后可以恢复WAN、LAN原厂MAC顺序，同时将WiFi MAC写到无线对应dat文件中，以便固定WiFi MAC。  
 
-- #### 2. Use JDCloud stock firmware
-该选项默认开启，即使用京东云百里AX6000原厂固件提取的无线mt_wifi、warp的firmware，需要使用源码的firmware请取消打钩。  
+- #### 2. Choice mt_wifi/warp firmware
+默认mt_wifi和warp使用TP XDR6088的fw-20230808，个人使用感觉无线ping丢包较少。  
+mt_wifi：  
+no-new-fw：不使用新的无线firmware，使用mt798x-7.6.6.1-src驱动中的fw-20220906  
+mt7986-fw-20221208：使用mt7986-7.6.7.0-20221209-b9c02f-obj提取的fw-20221208  
+mt7986-fw-jdc：使用JDCOS-JDC04-4.2.0.r4080固件提取的fw-20230228  
+mt7986-fw-20230421：使用mtk-openwrt-feeds(20230421)的fw-20230421  
+mt7986-fw-20230808：使用TP XDR6088的fw-20230808  
+mt7986-fw-20231024：使用mtk-openwrt-feeds(20231024)的fw-20231024  
+warp：  
+no-new-fw：不使用新的无线firmware，使用warp_20221209-3e6ae1-src驱动中的fw-20221208，这个fw和mt7986-7.6.7.0-20221209-b9c02f-obj提取的fw-20221208相同  
+mt7986-fw-jdc：使用JDCOS-JDC04-4.2.0.r4080固件提取的fw-20230308  
+mt7986-fw-20230421：使用mtk-openwrt-feeds(20230421)的fw-20230421  
+mt7986-fw-20230808：使用TP XDR6088的fw-20230808  
+mt7986-fw-20231024：使用mtk-openwrt-feeds(20231024)的fw-20231024  
+
 .mtwifi-cfg.config配置文件中已设置使用新的无线firmware：  
 CONFIG_MTK_MT7986_NEW_FW=y  
 CONFIG_WARP_NEW_FW=y  
@@ -93,3 +108,4 @@ CONFIG_PACKAGE_luci-app-dockerman=y
 ### 感谢P3TERX的Actions-OpenWrt
 - [P3TERX](https://github.com/P3TERX/Actions-OpenWrt)
 [Read the details in my blog (in Chinese) | 中文教程](https://p3terx.com/archives/build-openwrt-with-github-actions.html)
+
