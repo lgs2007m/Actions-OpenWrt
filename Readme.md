@@ -6,6 +6,7 @@
 
 #### hanwckf大佬mt798x uboot仓库- [hanwckf/bl-mt798x](https://github.com/hanwckf/bl-mt798x).
 
+### 刷砖也不怕！可以通过串口救砖：[MediaTek Filogic 系列路由器串口救砖教程](https://www.cnblogs.com/p123/p/18046679)
 ---
 ## JDCloud-AX6000 workflow 手动运行可选项：
 - [x] Use the original MAC address order
