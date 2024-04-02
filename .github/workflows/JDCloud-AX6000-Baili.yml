@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 ###############手动修改##############
-name: JDCloud-AX6000-hanwckf
+name: JDCloud-AX6000-Baili-hanwckf
 
 on:
   repository_dispatch:
@@ -70,9 +70,9 @@ env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: JDCloud-AX6000/.mtwifi-cfg.config
-  DIY_P1_SH: JDCloud-AX6000/diy-part1.sh
-  DIY_P2_SH: JDCloud-AX6000/diy-part2.sh
+  CONFIG_FILE: JDCloud-AX6000-Baili/.mtwifi-cfg.config
+  DIY_P1_SH: JDCloud-AX6000-Baili/diy-part1.sh
+  DIY_P2_SH: JDCloud-AX6000-Baili/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -161,8 +161,8 @@ jobs:
         
     - name: 选择无线firmware
       run: |
-        cp -r JDCloud-AX6000/firmware/mt_wifi/mt7986-fw-jdc openwrt/package/mtk/drivers/mt_wifi/files
-        cp -r JDCloud-AX6000/firmware/warp/mt7986-fw-jdc openwrt/package/mtk/drivers/warp/files
+        cp -r JDCloud-AX6000-Baili/firmware/mt_wifi/mt7986-fw-jdc openwrt/package/mtk/drivers/mt_wifi/files
+        cp -r JDCloud-AX6000-Baili/firmware/warp/mt7986-fw-jdc openwrt/package/mtk/drivers/warp/files
         cd openwrt
         if [ ${{ github.event.inputs.WA_FW }} == 'no-new-fw' ]; then
                 sed -i '/CONFIG_MTK_MT7986_NEW_FW=y/d' .config
@@ -178,7 +178,7 @@ jobs:
     - name: 使用GSW交换机驱动（非DSA）
       if: github.event.inputs.GSW == 'true'
       run: |
-        cp JDCloud-AX6000/mt7986a-gsw-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
+        cp JDCloud-AX6000-Baili/mt7986a-gsw-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
         cd openwrt
         sed -i '/jdcloud,re-cp-03)/ {n; /lan1 lan2 lan3 lan4/ {s/lan1 lan2 lan3 lan4/eth0/; a\
         \t\tucidef_add_switch "switch0" "1:lan" "2:lan" "3:lan" "4:lan" "6u@eth0"
