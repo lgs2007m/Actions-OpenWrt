@@ -257,7 +257,7 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: | 
         mapfile -t devices < <(grep '^CONFIG_TARGET_DEVICE.*=y' openwrt/.config | sed -r 's/.*DEVICE_(.*)=y/\1/')
-        mkdir openwrt/bin/targets/mediatek/mt7981
+        mkdir -p openwrt/bin/targets/mediatek/mt7981
         cp RAX3000M-eMMC_XR30/nx30pro_eeprom.bin openwrt/bin/targets/mediatek/mt7981/immortalwrt-mediatek-mt7981.manifest
         cp RAX3000M-eMMC_XR30/nx30pro_eeprom.bin openwrt/bin/targets/mediatek/mt7981/immortalwrt-mediatek-mt7981-cmcc_rax3000m-emmc-initramfs-kernel.bin
         cp RAX3000M-eMMC_XR30/nx30pro_eeprom.bin openwrt/bin/targets/mediatek/mt7981/immortalwrt-mediatek-mt7981-cmcc_rax3000m-emmc-squashfs-sysupgrade.bin
