@@ -261,7 +261,7 @@ jobs:
         rm -rf packages
         sudo -E apt-get -qq install rename
         echo "Value of DEVICE_NAME is ${{ env.DEVICE_NAME }}"
-        for val in "${{ env.DEVICE_NAME[@] }}"; do
+        for val in "${{ env.DEVICE_NAME }}"; do
         	rename 's/.*$val/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-$val-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
         	echo $val
         done
