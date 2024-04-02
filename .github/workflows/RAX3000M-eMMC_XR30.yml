@@ -117,7 +117,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
         
-    - name:  应用 cmcc_xr30.patch & 更新安装 feeds
+    - name:  应用cmcc_xr30.patch & 更新安装 feeds
       run: |
         cp RAX3000M-eMMC_XR30/cmcc_xr30.patch openwrt/cmcc_xr30.patch
         cd openwrt
@@ -220,8 +220,7 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         ## make -j$(nproc) || make -j1 || make -j1 V=s
-        grep '^CONFIG_TARGET_DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        
         sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
         if sed -n '/rax3000m/,/;;/p' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network | grep -q 'lan_mac=$(mmc_get_mac_binary factory 0x2A)'; then
@@ -257,13 +256,13 @@ jobs:
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: | 
+        mapfile -t devices < <(grep '^CONFIG_TARGET_DEVICE.*=y' openwrt/.config | sed -r 's/.*DEVICE_(.*)=y/\1/')
         cd openwrt/bin/targets/*/*
         rm -rf packages
         sudo -E apt-get -qq install rename
-        echo "Value of DEVICE_NAME is ${{ env.DEVICE_NAME }}"
-        for val in "${{ env.DEVICE_NAME }}"; do
-        	rename 's/.*$val/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-$val-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
-        	echo $val
+        for ((i=0; i<${#devices[@]}; i++)); do
+          rename 's/.*${devices[$i]}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${devices[$i]}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
+          echo ${devices[$i]}
         done
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
