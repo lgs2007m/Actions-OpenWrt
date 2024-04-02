@@ -257,8 +257,8 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: | 
         mapfile -t devices < <(grep '^CONFIG_TARGET_DEVICE.*=y' openwrt/.config | sed -r 's/.*DEVICE_(.*)=y/\1/')
-        cd openwrt/bin/targets/*/*
-        rm -rf packages
+        ##cd openwrt/bin/targets/*/*
+        ##rm -rf packages
         sudo -E apt-get -qq install rename
         for ((i=0; i<${#devices[@]}; i++)); do
           rename 's/.*${devices[$i]}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${devices[$i]}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
