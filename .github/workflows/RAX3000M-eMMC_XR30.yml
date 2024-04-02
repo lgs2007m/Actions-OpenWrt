@@ -219,7 +219,7 @@ jobs:
         md5_file2=$(md5sum "openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin" | awk '{print $1}')
         cd openwrt
         echo -e "$(nproc) thread compile"
-        ## make -j$(nproc) || make -j1 || make -j1 V=s
+        make -j$(nproc) || make -j1 || make -j1 V=s
         
         sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
@@ -257,8 +257,8 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: | 
         mapfile -t devices < <(grep '^CONFIG_TARGET_DEVICE.*=y' openwrt/.config | sed -r 's/.*DEVICE_(.*)=y/\1/')
-        ##cd openwrt/bin/targets/*/*
-        ##rm -rf packages
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
         sudo -E apt-get -qq install rename
         for ((i=0; i<${#devices[@]}; i++)); do
           rename 's/.*${devices[$i]}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${devices[$i]}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
