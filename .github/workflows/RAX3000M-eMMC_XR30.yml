@@ -148,8 +148,11 @@ jobs:
     - name: eMMC使用highspeed
       run: |
         cd openwrt
-        if ! grep -q 'cap-mmc-highspeed' "${{ env.DTS_FILE }}"; then
-                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.DTS_FILE }}"
+        if ! grep -q 'cap-mmc-highspeed' "${{ env.RAX3000M_EMMC_DTS_FILE }}"; then
+                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.RAX3000M_EMMC_DTS_FILE }}"
+        fi
+        if ! grep -q 'cap-mmc-highspeed' "${{ env.XR30_DTS_FILE }}"; then
+                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.XR30_DTS_FILE }}"
         fi
         
     - name: eMMC使用52MHz频率
