@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 ###############手动修改##############
-name: CMCC-RAX3000M-EMMC-hanwckf
+name: RAX3000M-eMMC_XR30-hanwckf
 
 on:
   repository_dispatch:
@@ -52,10 +52,11 @@ env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
-  DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
-  CONFIG_FILE: CMCC-RAX3000M-EMMC/.mtwifi-cfg.config
-  DIY_P1_SH: CMCC-RAX3000M-EMMC/diy-part1.sh
-  DIY_P2_SH: CMCC-RAX3000M-EMMC/diy-part2.sh
+  RAX3000M_EMMC_DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
+  XR30_DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-xr30.dts
+  CONFIG_FILE: RAX3000M-eMMC_XR30/.mtwifi-cfg.config
+  DIY_P1_SH: RAX3000M-eMMC_XR30/diy-part1.sh
+  DIY_P2_SH: RAX3000M-eMMC_XR30/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -100,12 +101,16 @@ jobs:
         large-packages: false
         swap-storage: false
         
-    - name: 下载固件源码
+    - name: 下载固件源码 & 应用cmcc_xr30.patch
       working-directory: /workdir
       run: |
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+        cp RAX3000M-eMMC_XR30/cmcc_xr30.patch openwrt/cmcc_xr30.patch
+        cd openwrt
+        git apply cmcc_xr30.patch
         
     - name: 加载feeds.conf.default & DIY_P1_SH
       run: |
@@ -153,12 +158,13 @@ jobs:
       if: github.event.inputs.EMMC_52MHZ == 'true'
       run: |
         cd openwrt
-        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.DTS_FILE }}"
+        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.RAX3000M_EMMC_DTS_FILE }}"
+        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.XR30_DTS_FILE }}"
         
     - name: 使用nx30pro的高功率eeprom
       if: github.event.inputs.EEPROM == 'true'
       run: |
-        cp CMCC-RAX3000M-EMMC/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
+        cp RAX3000M-eMMC_XR30/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
         cd openwrt
         ## 如果MAC没有修复则单独固定WiFi MAC
         if sed -n '/rax3000m/,/;;/p' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network | grep -q 'lan_mac=$(mmc_get_mac_binary factory 0x24)'; then
@@ -206,7 +212,7 @@ jobs:
     - name: 编译固件
       id: compile
       run: |
-        md5_file1=$(md5sum "CMCC-RAX3000M-EMMC/nx30pro_eeprom.bin" | awk '{print $1}')
+        md5_file1=$(md5sum "RAX3000M-eMMC_XR30/nx30pro_eeprom.bin" | awk '{print $1}')
         md5_file2=$(md5sum "openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin" | awk '{print $1}')
         cd openwrt
         echo -e "$(nproc) thread compile"

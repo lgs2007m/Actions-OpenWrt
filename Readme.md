@@ -65,7 +65,7 @@ CONFIG_PACKAGE_lua-cjson=y
 CONFIG_PACKAGE_luci-app-dockerman=y  
 
 ---
-## CMCC-RAX3000M-EMMC workflow 手动运行可选项：
+## CMCC-RAX3000M-eMMC/CMCC-XR30 workflow 手动运行可选项：
 - [x] Use the original MAC address order
 - [x] Use nx30pro eeprom
 - [ ] eMMC use 52MHz max-frequency
@@ -80,13 +80,14 @@ CONFIG_PACKAGE_luci-app-dockerman=y
 - #### 2. Use nx30pro eeprom
 该选项默认开启，即使用nx30pro的高功率eeprom，不需要请取消打钩。  
 不使用独立fem无线功放的MT7981B路由器可以通过替换高功率的eeprom提高信号强度。  
-RAX3000M的factory eeprom设置功率不高，2.4G是23dBm、5G是22dBm，使用NX30 PRO的高功率eeprom，2.4G可提升至25dBm、5G提升至24dBm。  
+RAX3000M/XR30的factory eeprom设置功率不高，2.4G是23dBm、5G是22dBm，使用NX30 PRO的高功率eeprom，2.4G可提升至25dBm、5G提升至24dBm。  
 开启该选项会使用NX30 PRO的eeprom替换掉固件中的MT7981_iPAiLNA_EEPROM.bin文件，并写入WiFi MAC到dat以便固定MAC。  
 
 - #### 3. eMMC use 52MHz max-frequency
 该选项默认关闭，即按源码DTS中eMMC频率26MHz编译，需要设置为52MHz请打钩。  
-原厂机子选用的eMMC颗粒品质不太行，不能运行在MT7981B eMMC最高的52MHz频率，所以原厂固件使用的是26MHz频率。  
+RAX3000M eMMC原厂机子选用的eMMC颗粒品质不太行，不能运行在MT7981B eMMC最高的52MHz频率，所以原厂固件使用的是26MHz频率。  
 除非更换过eMMC，不然不建议使用52MHz，基本跑一段时间都会出问题，老实使用26MHz即可。  
+XR30原厂固件使用的是52MHz频率，没有机子无法测试eMMC是否有问题，云适配。  
 yml脚本中固定设置了eMMC使用highspeed，以达到设置的26MHz、52MHz。  
 
 - #### 4. Use luci-app-mtk wifi config
