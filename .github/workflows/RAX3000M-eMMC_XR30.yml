@@ -101,16 +101,12 @@ jobs:
         large-packages: false
         swap-storage: false
         
-    - name: 下载固件源码 & 应用cmcc_xr30.patch
+    - name: 下载固件源码
       working-directory: /workdir
       run: |
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-
-        cp RAX3000M-eMMC_XR30/cmcc_xr30.patch openwrt/cmcc_xr30.patch
-        cd openwrt
-        git apply cmcc_xr30.patch
         
     - name: 加载feeds.conf.default & DIY_P1_SH
       run: |
@@ -119,9 +115,11 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
         
-    - name: 更新 & 安装 feeds
+    - name:  应用 cmcc_xr30.patch & 更新安装 feeds
       run: |
+        cp RAX3000M-eMMC_XR30/cmcc_xr30.patch openwrt/cmcc_xr30.patch
         cd openwrt
+        git apply cmcc_xr30.patch
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         
