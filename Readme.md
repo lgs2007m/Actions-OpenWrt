@@ -85,9 +85,9 @@ RAX3000M/XR30的factory eeprom设置功率不高，2.4G是23dBm、5G是22dBm，�
 
 - #### 3. eMMC use 52MHz max-frequency
 该选项默认关闭，即按源码DTS中eMMC频率26MHz编译，需要设置为52MHz请打钩。  
-RAX3000M eMMC原厂机子选用的eMMC颗粒品质不太行，不能运行在MT7981B eMMC最高的52MHz频率，所以原厂固件使用的是26MHz频率。  
+RAX3000M算力版原厂机子选用的eMMC颗粒品质不太行，不能运行在MT7981B eMMC最高的52MHz频率，所以原厂固件使用的是26MHz频率。  
 除非更换过eMMC，不然不建议使用52MHz，基本跑一段时间都会出问题，老实使用26MHz即可。  
-XR30原厂固件使用的是52MHz频率，没有机子无法测试eMMC是否有问题，云适配。  
+RAX3000Z增强版原厂固件使用的是52MHz频率，没有机子无法测试eMMC是否有问题，云适配。  
 yml脚本中固定设置了eMMC使用highspeed，以达到设置的26MHz、52MHz。  
 
 - #### 4. Use luci-app-mtk wifi config
