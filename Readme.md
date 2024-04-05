@@ -65,7 +65,7 @@ CONFIG_PACKAGE_lua-cjson=y
 CONFIG_PACKAGE_luci-app-dockerman=y  
 
 ---
-## CMCC-RAX3000M-eMMC/CMCC-XR30 workflow 手动运行可选项：
+## CMCC-RAX3000M-eMMC/CMCC-XR30-eMMC workflow 手动运行可选项：
 - [x] Use the original MAC address order
 - [x] Use nx30pro eeprom
 - [ ] eMMC use 52MHz max-frequency
