@@ -1,0 +1,317 @@
+#
+# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+# Description: Build OpenWrt using GitHub Actions
+#
+###############手动修改##############
+name: RAX3000M-eMMC_XR30-eMMC-hanwckf
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      MAC_ORDER:
+        description: 'Use the original MAC address order'
+        required: true
+        default: true
+        type: boolean
+      EEPROM:
+        description: 'Use nx30pro eeprom'
+        required: true
+        default: true
+        type: boolean
+      EMMC_52MHZ:
+        description: 'eMMC use 52MHz max-frequency'
+        required: true
+        default: false
+        type: boolean
+      APP_MTK:
+        description: 'Use luci-app-mtk wifi config'
+        required: true
+        default: false
+        type: boolean
+      NO_DOCKERMAN:
+        description: 'Not build luci-app-dockerman'
+        required: true
+        default: false
+        type: boolean
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
+#  schedule:
+#    - cron: 0 16 * * *
+
+env:
+  ###############手动修改##############
+  ##因为是两个设备，所以手动设置上传时候的打包名称和tag名称UPLOAD_TAG_NAME
+  OPENWRT_NAME: hanwckf
+  UPLOAD_TAG_NAME: rax3000m-emmc_xr30-emmc
+  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
+  REPO_BRANCH: openwrt-21.02
+  FEEDS_CONF: feeds.conf.default
+  RAX3000M_EMMC_DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
+  XR30_EMMC_DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-xr30-emmc.dts
+  CONFIG_FILE: RAX3000M-eMMC_XR30-eMMC/.mtwifi-cfg.config
+  DIY_P1_SH: RAX3000M-eMMC_XR30-eMMC/diy-part1.sh
+  DIY_P2_SH: RAX3000M-eMMC_XR30-eMMC/diy-part2.sh
+  SSH_ACTIONS: false
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    permissions:
+      contents: write
+    
+    steps:
+    - name: 检查项目分支
+      uses: actions/checkout@main
+      
+    - name: 初始化编译环境
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-2004)
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+        
+    - name: 清理磁盘空间(Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        # this might remove tools that are actually needed,
+        # when set to "true" but frees about 6 GB
+        tool-cache: true
+        
+        # all of these default to true, but feel free to set to
+        # "false" if necessary for your workflow
+        android: false
+        dotnet: false
+        haskell: false
+        large-packages: false
+        swap-storage: false
+        
+    - name: 下载固件源码
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        
+    - name: 加载feeds.conf.default & DIY_P1_SH
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+        
+    - name:  应用cmcc_xr30-emmc.patch & 更新安装 feeds
+      run: |
+        cp RAX3000M-eMMC_XR30-eMMC/cmcc_xr30-emmc.patch openwrt/cmcc_xr30-emmc.patch
+        cd openwrt
+        git apply cmcc_xr30-emmc.patch
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        
+    - name: 加载config & DIY_P2_SH
+      run: |
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        chmod +x $DIY_P2_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+        
+    - name: 使用原厂MAC地址顺序
+      if: github.event.inputs.MAC_ORDER == 'true'
+      run: |
+        cd openwrt
+        ## 调换lan、wan的MAC地址
+        sed -i '/cmcc,rax3000m-emmc)/{n; s/lan_mac=$(mmc_get_mac_binary factory 0x24)/lan_mac=$(mmc_get_mac_binary factory 0x2A)/; n; s/wan_mac=$(mmc_get_mac_binary factory 0x2a)/wan_mac=$(mmc_get_mac_binary factory 0x24)/}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+        ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
+        echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7981.dbdc.b0.dat
+        \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7981.dbdc.b1.dat" > temp_insert.txt
+        ## 将文本内容写入02_network
+        sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
+        }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+        
+    - name: eMMC使用highspeed
+      run: |
+        cd openwrt
+        if ! grep -q 'cap-mmc-highspeed' "${{ env.RAX3000M_EMMC_DTS_FILE }}"; then
+                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.RAX3000M_EMMC_DTS_FILE }}"
+        fi
+        if ! grep -q 'cap-mmc-highspeed' "${{ env.XR30_EMMC_DTS_FILE }}"; then
+                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.XR30_EMMC_DTS_FILE }}"
+        fi
+        
+    - name: eMMC使用52MHz频率
+      if: github.event.inputs.EMMC_52MHZ == 'true'
+      run: |
+        cd openwrt
+        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.RAX3000M_EMMC_DTS_FILE }}"
+        sed -i 's/max-frequency = <.*>/max-frequency = <52000000>/g' "${{ env.XR30_EMMC_DTS_FILE }}"
+        
+    - name: 使用nx30pro的高功率eeprom
+      if: github.event.inputs.EEPROM == 'true'
+      run: |
+        cp RAX3000M-eMMC_XR30-eMMC/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
+        cd openwrt
+        ## 如果MAC没有修复则单独固定WiFi MAC
+        if sed -n '/rax3000m/,/;;/p' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network | grep -q 'lan_mac=$(mmc_get_mac_binary factory 0x24)'; then
+        ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
+        echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7981.dbdc.b0.dat
+        \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
+        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7981.dbdc.b1.dat" > temp_insert.txt
+        ## 将文本内容写入02_network
+        sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
+        }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+        fi
+        
+    - name: 使用luci-app-mtk无线配置
+      if: github.event.inputs.APP_MTK == 'true'
+      run: |
+        cd openwrt
+        sed -i 's/CONFIG_PACKAGE_luci-app-mtwifi-cfg=y/CONFIG_PACKAGE_luci-app-mtk=y/g' .config
+        sed -i 's/CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y/CONFIG_PACKAGE_luci-i18n-mtk-zh-cn=y/g' .config
+        sed -i 's/CONFIG_PACKAGE_mtwifi-cfg=y/CONFIG_PACKAGE_wifi-profile=y/g' .config
+        sed -i 's/CONFIG_PACKAGE_lua-cjson=y/CONFIG_WIFI_NORMAL_SETTING=y/g' .config
+        
+    - name: 取消编译dockerman
+      if: github.event.inputs.NO_DOCKERMAN == 'true'
+      run: |
+        cd openwrt
+        sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' .config
+        
+    - name: SSH链接管理
+      uses: P3TERX/ssh2actions@v1.0.0
+      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+      env:
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        
+    - name: 下载安装包
+      id: package
+      run: |
+        cd openwrt
+        make defconfig
+        make download -j$(nproc)
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+        
+    - name: 编译固件
+      id: compile
+      run: |
+        md5_file1=$(md5sum "RAX3000M-eMMC_XR30-eMMC/nx30pro_eeprom.bin" | awk '{print $1}')
+        md5_file2=$(md5sum "openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin" | awk '{print $1}')
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 || make -j1 V=s
+        
+        sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
+        [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
+        if sed -n '/rax3000m/,/;;/p' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network | grep -q 'lan_mac=$(mmc_get_mac_binary factory 0x2A)'; then
+                echo "MAC_FIX=-MAC_fix" >> $GITHUB_ENV
+        else
+                echo "MAC_FIX=" >> $GITHUB_ENV
+        fi
+        if [ "$md5_file1" == "$md5_file2" ]; then
+                echo "EEPROM=-eeprom" >> $GITHUB_ENV
+        else
+                echo "EEPROM=" >> $GITHUB_ENV
+        fi
+        echo $(( $(grep -oP "max-frequency = <\K[0-9]*" "${{ env.RAX3000M_EMMC_DTS_FILE }}") / 1000000 )) > EMMC_MHZ
+        [ -s EMMC_MHZ ] && echo "EMMC_MHZ=$(cat EMMC_MHZ)MHz" >> $GITHUB_ENV
+        if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
+                echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
+        else
+                echo "WIFI_INTERFACE=" >> $GITHUB_ENV
+        fi
+        if grep -q 'CONFIG_PACKAGE_luci-app-dockerman=y' .config; then
+                echo "BUILD_DOCKERMAN=-docker" >> $GITHUB_ENV
+        else
+                echo "BUILD_DOCKERMAN=" >> $GITHUB_ENV
+        fi
+        echo "FILE_DATE=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+        
+    - name: 查看磁盘使用情况
+      if: (!cancelled())
+      run: df -hT
+      
+    - name: 整理文件并重命名
+      id: organize
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: | 
+        mapfile -t devices < <(grep '^CONFIG_TARGET_DEVICE.*=y' openwrt/.config | sed -r 's/.*DEVICE_(.*)=y/\1/')
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        sudo -E apt-get -qq install rename
+        for val in "${devices[@]}"; do
+          rename "s/.*${val}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/" *
+          echo "$val"
+        done
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+        
+    - name: 打包上传固件到Actions Artifacts
+      uses: actions/upload-artifact@main
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        path: ${{ env.FIRMWARE }}
+        
+    - name: 生成固件Release标签
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        touch release.txt
+        echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
+        echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
+        if [[ "${{ env.MAC_FIX }}" == '-MAC_fix' ]]; then
+               echo "- 修改源码 使用原厂的MAC地址顺序" >> release.txt
+        else
+               echo "- 未修改源码中的MAC地址顺序" >> release.txt
+        fi
+        if [[ "${{ env.EEPROM }}" == '-eeprom' ]]; then
+               echo "- 使用nx30pro高功率eeprom" >> release.txt
+        else
+               echo "- 未使用nx30pro高功率eeprom" >> release.txt
+        fi
+        echo "- eMMC使用${{ env.EMMC_MHZ }}频率" >> release.txt
+        if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
+                echo "- 使用hanwckf mtwifi-cfg原生luci无线配置工具" >> release.txt
+        else
+                echo "- 使用mtk-sdk luci-app-mtk无线配置工具" >> release.txt
+        fi
+        if [[ "${{ env.BUILD_DOCKERMAN }}" == '-docker' ]]; then
+                echo "- 已编译luci-app-dockerman" >> release.txt
+        else
+                echo "- 未编译luci-app-dockerman" >> release.txt
+        fi
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "status=success" >> $GITHUB_OUTPUT
+        
+    - name: 发布固件至Release
+      uses: softprops/action-gh-release@master
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: ${{ env.FIRMWARE }}/*
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}-${{ env.EMMC_MHZ }}${{ env.EEPROM }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
