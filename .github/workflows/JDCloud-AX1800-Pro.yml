@@ -17,7 +17,7 @@ on:
       TEMP:
         description: 'Show soc status and wifi temperature on luci'
         required: true
-        default: false
+        default: true
         type: boolean
       NO_DOCKERMAN:
         description: 'Not build luci-app-dockerman'
