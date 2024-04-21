@@ -1,13 +1,3 @@
-diff --git a/feeds.conf.default b/feeds.conf.default
-index af479c6ba1..e6e14bb536 100644
---- a/feeds.conf.default
-+++ b/feeds.conf.default
-@@ -7,3 +7,5 @@ src-git nss_packages https://github.com/JiaY-shi/nss-packages.git;k6.6
- #src-git targets https://github.com/openwrt/targets.git
- #src-git oldpackages http://git.openwrt.org/packages.git
- #src-link custom /usr/src/openwrt/custom-feed
-+src-git kenzo https://github.com/kenzok8/openwrt-packages
-+src-git small https://github.com/kenzok8/small
 diff --git a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.sh b/package/network/config/wifi-scripts/files/lib/wifi/mac80211.sh
 index e24a2a634e..4a3d6455b5 100644
 --- a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.sh
