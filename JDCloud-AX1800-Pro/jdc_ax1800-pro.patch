@@ -151,7 +151,7 @@ index 8cb9359a93..2bc060f834 100644
  jdc,ax1800-pro)
 -    ucidef_set_led_netdev "wan" "WAN" "net_blue" "eth3"
 -    ;;
-+    	ucidef_set_led_default "green" "GREEN" "green:status" "1"
++	ucidef_set_led_default "green" "GREEN" "green:status" "1"
 +	ucidef_set_led_default "blue" "BLUE" "blue:status" "0"
 +	ucidef_set_led_default "red" "RED" "red:status" "0"
 +	;;
