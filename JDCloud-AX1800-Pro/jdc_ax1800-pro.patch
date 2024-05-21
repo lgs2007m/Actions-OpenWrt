@@ -12,7 +12,7 @@ index e24a2a634e..4a3d6455b5 100644
  			set wireless.default_${name}=wifi-iface
  			set wireless.default_${name}.device=${name}
 diff --git a/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-jdc-ax1800-pro.dts b/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-jdc-ax1800-pro.dts
-index fac57d9da4..1563b46d45 100644
+index 5c743d03be..1563b46d45 100644
 --- a/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-jdc-ax1800-pro.dts
 +++ b/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-jdc-ax1800-pro.dts
 @@ -20,7 +20,6 @@
@@ -23,15 +23,6 @@ index fac57d9da4..1563b46d45 100644
  #include <dt-bindings/input/input.h>
  #include <dt-bindings/gpio/gpio.h>
  #include <dt-bindings/leds/common.h>
-@@ -44,7 +43,7 @@
- 
- 	chosen {
- 		bootargs = "console=ttyMSM0,115200,n8";
--		bootargs-append = " rootfstype=squashfs,ext4 swiotlb=1 coherent_pool=2M swiotlb=1";
-+		bootargs-append = " rootfstype=squashfs,ext4 swiotlb=1 coherent_pool=2M";
- 	};
- 
- 	gpio_keys {
 @@ -98,7 +97,7 @@
  		mux {
  			pins = "gpio38","gpio39","gpio40","gpio41";
