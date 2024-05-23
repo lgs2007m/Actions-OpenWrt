@@ -101,6 +101,9 @@ jobs:
     - name: 应用patch & 更新安装 feeds
       run: |
         cp JDCloud-AX1800-Pro/jdc_ax1800-pro.patch openwrt/jdc_ax1800-pro.patch
+        ##降级mbedtls临时解决和shadowsocks-libev的冲突
+        rm -rf openwrt/package/libs/mbedtls
+        cp -r JDCloud-AX1800-Pro/mbedtls-2.28.8 openwrt/package/libs/mbedtls
         cd openwrt
         git apply jdc_ax1800-pro.patch
         ./scripts/feeds update -a
