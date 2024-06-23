@@ -8,17 +8,12 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 ###############手动修改##############
-name: JDCloud-AX1800-Pro-JiaY-shi
+name: JDCloud-AX1800-Pro_AX6600-lede
 
 on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
-      TEMP:
-        description: 'Show soc status and wifi temperature on luci'
-        required: true
-        default: true
-        type: boolean
       NO_DOCKERMAN:
         description: 'Not build luci-app-dockerman'
         required: true
@@ -33,13 +28,14 @@ on:
 
 env:
   ###############手动修改##############
-  OPENWRT_NAME: JiaY-shi
-  REPO_URL: https://github.com/JiaY-shi/openwrt
-  REPO_BRANCH: ipq60xx-devel_nss
+  OPENWRT_NAME: lede
+  UPLOAD_TAG_NAME: jdcloud-ax1800-pro_ax6600
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: JDCloud-AX1800-Pro/.config
-  DIY_P1_SH: JDCloud-AX1800-Pro/diy-part1.sh
-  DIY_P2_SH: JDCloud-AX1800-Pro/diy-part2.sh
+  CONFIG_FILE: JDCloud-AX1800-Pro_AX6600/.config
+  DIY_P1_SH: JDCloud-AX1800-Pro_AX6600/diy-part1.sh
+  DIY_P2_SH: JDCloud-AX1800-Pro_AX6600/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -100,12 +96,9 @@ jobs:
         
     - name: 应用patch & 更新安装 feeds
       run: |
-        cp JDCloud-AX1800-Pro/jdc_ax1800-pro.patch openwrt/jdc_ax1800-pro.patch
-        ##降级mbedtls临时解决和shadowsocks-libev的冲突
-        rm -rf openwrt/package/libs/mbedtls
-        cp -r JDCloud-AX1800-Pro/mbedtls-2.28.8 openwrt/package/libs/mbedtls
+        cp JDCloud-AX1800-Pro_AX6600/jdcloud-ax1800-pro_ax6600.patch openwrt/jdcloud-ax1800-pro_ax6600.patch
         cd openwrt
-        git apply jdc_ax1800-pro.patch
+        git apply jdcloud-ax1800-pro_ax6600.patch
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         
@@ -115,13 +108,6 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        
-    - name: 显示CPU状态和无线温度
-      if: github.event.inputs.TEMP == 'true'
-      run: |
-        cp JDCloud-AX1800-Pro/show-soc-status-on-luci.patch openwrt/feeds/luci/show-soc-status-on-luci.patch
-        cd openwrt/feeds/luci
-        git apply show-soc-status-on-luci.patch
         
     - name: 取消编译dockerman
       if: github.event.inputs.NO_DOCKERMAN == 'true'
@@ -151,17 +137,9 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=$(cat DEVICE_NAME)" >> $GITHUB_ENV
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*TARGET_.*_(.*)_DEVICE_.*=y/\1/' > TARGET_NAME
-        [ -s TARGET_NAME ] && echo "TARGET_NAME=$(cat TARGET_NAME)" >> $GITHUB_ENV
+        
         sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
-        if [ -f "feeds/luci/modules/luci-base/root/sbin/soc-status" ]; then
-                echo "SHOW_TEMP=-show_temp" >> $GITHUB_ENV
-        else
-                echo "SHOW_TEMP=" >> $GITHUB_ENV
-        fi
         if grep -q 'CONFIG_PACKAGE_luci-app-dockerman=y' .config; then
                 echo "BUILD_DOCKERMAN=-docker" >> $GITHUB_ENV
         else
@@ -178,10 +156,14 @@ jobs:
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: | 
+        mapfile -t devices < <(grep '^CONFIG_TARGET_DEVICE.*=y' openwrt/.config | sed -r 's/.*DEVICE_(.*)=y/\1/')
         cd openwrt/bin/targets/*/*
         rm -rf packages
         sudo -E apt-get -qq install rename
-        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.BUILD_DOCKERMAN }}/' *
+                for val in "${devices[@]}"; do
+          rename "s/.*${val}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}${{ env.BUILD_DOCKERMAN }}/" *
+          echo "$val"
+        done
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
@@ -189,7 +171,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
         
     - name: 生成固件Release标签
@@ -199,18 +181,14 @@ jobs:
         touch release.txt
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        echo "- 注意AX1800规格的5G无线不支持160MHz频宽" >> release.txt
-        if [[ "${{ env.SHOW_TEMP }}" == '-show_temp' ]]; then
-                echo "- 显示CPU状态和无线温度" >> release.txt
-        else
-                echo "- 不显示CPU状态和无线温度" >> release.txt
-        fi
+        echo "- 注意京东云AX1800-Pro亚瑟无线AX1800规格，5G无线不支持160MHz频宽" >> release.txt
+        echo "- 注意京东云AX6600雅典娜无线AX6600规格，5.8G无线不支持160MHz频宽" >> release.txt
         if [[ "${{ env.BUILD_DOCKERMAN }}" == '-docker' ]]; then
                 echo "- 已编译luci-app-dockerman" >> release.txt
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
         
     - name: 发布固件至Release
@@ -220,6 +198,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
