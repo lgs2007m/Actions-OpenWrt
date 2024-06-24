@@ -1,3 +1,16 @@
+diff --git a/package/boot/uboot-envtools/files/qualcommax b/package/boot/uboot-envtools/files/qualcommax
+index 0c6b9e60b..e7c7992e9 100644
+--- a/package/boot/uboot-envtools/files/qualcommax
++++ b/package/boot/uboot-envtools/files/qualcommax
+@@ -48,6 +48,8 @@ qnap,301w)
+ 	[ -n "$idx" ] && \
+ 		ubootenv_add_uci_config "/dev/mtd$idx" "0x0" "0x20000" "0x20000" "1"
+ 	;;
++jdcloud,ax6600|\
++jdcloud,ax1800-pro|\
+ redmi,ax5-jdcloud)
+ 	mmcpart="$(find_mmc_part 0:APPSBLENV)"
+ 	[ -n "$mmcpart" ] && \
 diff --git a/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-re-ss-01.dts b/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-ax1800-pro.dts
 similarity index 94%
 rename from target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-re-ss-01.dts
