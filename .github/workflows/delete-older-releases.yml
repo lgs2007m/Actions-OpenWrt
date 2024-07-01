@@ -1,8 +1,8 @@
 name: delete-older-releases
 on:
   workflow_dispatch:
-#  schedule:
-#    - cron: 0 16 * * *
+  schedule:
+    - cron: 0 3 * * 1
     
 jobs:
   del_runs:
@@ -18,7 +18,7 @@ jobs:
     - name: 删除旧的Releases
       uses: dev-drprasad/delete-older-releases@v0.2.0
       with:
-        keep_latest: 5
+        keep_latest: 4
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
