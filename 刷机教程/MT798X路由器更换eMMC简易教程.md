@@ -1,6 +1,9 @@
-目前遇到的MT798X的eMMC的路由器京东云百里AX6000、CMCC RAX3000M eMMC算力版，都是闪存只有eMMC的。
+目前遇到的MT798X的eMMC的路由器京东云百里AX6000、GL.iNet MT6000、CMCC RAX3000M eMMC算力版、CMCC RAX3000Z增强版等，都是闪存只有eMMC的。
 
-下面以CMCC RAX3000M eMMC算力版更换eMMC为例（京东云百里方法相同）：  
+目前已经有大佬的mtk_uartboot串口TTL救砖，可以说MT798X天下无砖了。MT798X更换闪存只需要直接焊接上去，然后uartboot从内存启动hanwckf大佬仓库的uboot，打开uboot的webui刷gpt，重启再uartboot启动刷bl2，再uartboot启动刷fip，最后直接进uboot刷固件即可，不需要编程器了，系统启动后再恢复其他分区。当然命令熟悉的可以直接uboot控制台用命令刷。一般全新eMMC没有问题，如果使用拆机的eMMC，建议先查看ext_csd信息是否和下面编程器方法中的ext_csd信息是否相同。因为H/W reset只能设置一次，拆机eMMC可能已设置过了，未测试这个H/W reset和原厂不同是否影响启动。  
+[MediaTek Filogic 系列路由器串口救砖教程](https://www.cnblogs.com/p123/p/18046679)  
+
+下面是编程器写入eMMC的方法，以CMCC RAX3000M eMMC算力版更换eMMC为例（其他路由器方法相同）：  
 bl2默认在mmcblk0boot0这个硬件分区，uboot在mmcblk0的软件分区中的fip分区。  
 当我们想要换eMMC的时候，需要有ext_csd信息、mmcblk0boot0分区、mmcblk0_GPT到mmcblk0p11_fwk2分区备份。  
 这个是完全恢复原厂系统，如果恢复op系统更简单，直接用刷机的gpt分区表和fip替换原厂的gpt分区表和fip分区文件，后面部分只需要合并mmcblk0_GPT到mmcblk0p3_fip即可。
