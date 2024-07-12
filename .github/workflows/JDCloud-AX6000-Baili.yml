@@ -156,7 +156,7 @@ jobs:
         \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
         \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7986-ax6000.dbdc.b1.dat" > temp_insert.txt
         ## 将文本内容写入02_network
-        sed -i '/mediatek_setup_macs()/,/\};/ {/jdcloud,re-cp-03)/ {n;n;n;r temp_insert.txt
+        sed -i '/mediatek_setup_macs()/,/exit/ {/jdcloud,re-cp-03)/ {n;n;n;r temp_insert.txt
         }}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
         
     - name: 选择无线firmware
