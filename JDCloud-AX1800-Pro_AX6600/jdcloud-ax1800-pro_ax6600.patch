@@ -69,7 +69,7 @@ index a7ec1be5f..17037a44f 100644
  		ethernet0 = "/soc/dp1";
  		ethernet1 = "/soc/dp2";
 diff --git a/target/linux/qualcommax/image/ipq60xx.mk b/target/linux/qualcommax/image/ipq60xx.mk
-index ef05a150b..4b203b733 100644
+index 14c6f11e1..f709502eb 100644
 --- a/target/linux/qualcommax/image/ipq60xx.mk
 +++ b/target/linux/qualcommax/image/ipq60xx.mk
 @@ -18,9 +18,8 @@ define Device/UbiFit
@@ -81,10 +81,10 @@ index ef05a150b..4b203b733 100644
 -	IMAGE/recovery.bin := append-kernel | pad-to 6144k | append-rootfs | append-metadata
 +	IMAGES := factory.bin sysupgrade.bin
 +	IMAGE/factory.bin := append-kernel | pad-to 6144k | append-rootfs | append-metadata
+ 	IMAGE/sysupgrade.bin/squashfs := append-rootfs | pad-to 64k | sysupgrade-tar rootfs=$$$$@ | append-metadata
  endef
  
- define Device/cmiot_ax18
-@@ -61,7 +60,7 @@ define Device/glinet_gl-axt1800
+@@ -62,7 +61,7 @@ define Device/glinet_gl-axt1800
  endef
  TARGET_DEVICES += glinet_gl-axt1800
  
@@ -93,7 +93,7 @@ index ef05a150b..4b203b733 100644
  	$(call Device/FitImage)
  	$(call Device/EmmcImage)
  	DEVICE_VENDOR := JDCloud
-@@ -72,9 +71,9 @@ define Device/jdcloud_re-cs-02
+@@ -73,9 +72,9 @@ define Device/jdcloud_re-cs-02
  	DEVICE_DTS_CONFIG := config@cp03-c3
  	DEVICE_PACKAGES := ipq-wifi-jdcloud_ax6600 kmod-ath11k-pci ath11k-firmware-qcn9074
  endef
@@ -105,7 +105,7 @@ index ef05a150b..4b203b733 100644
  	$(call Device/FitImage)
  	$(call Device/EmmcImage)
  	DEVICE_VENDOR := JDCloud
-@@ -85,7 +84,7 @@ define Device/jdcloud_re-ss-01
+@@ -86,7 +85,7 @@ define Device/jdcloud_re-ss-01
  	DEVICE_DTS_CONFIG := config@cp03-c2
  	DEVICE_PACKAGES := ipq-wifi-jdcloud_ax1800pro
  endef
