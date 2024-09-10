@@ -66,31 +66,22 @@ CONFIG_PACKAGE_luci-app-dockerman=y
 
 ---
 ## CMCC-RAX3000M-eMMC/CMCC-XR30-eMMC workflow 手动运行可选项：
-- [x] Use the original MAC address order
-- [x] Use nx30pro eeprom
-- [ ] eMMC use 52MHz max-frequency
+- [x] Use nx30pro eeprom and fixed WiFi MAC address
 - [ ] Use luci-app-mtk wifi config
 - [ ] Not build luci-app-dockerman
 
-- #### 1. Use the original MAC address order
-该选项默认开启，即修改源码中的WAN、LAN地址顺序，恢复原厂MAC地址顺序并固定WiFi MAC，不需要请取消打钩。  
-目前源码的WAN、LAN的MAC地址读取位置与原厂相反，所以WAN、LAN的MAC较原厂MAC是反的，同时目前源码的WiFi MAC最后一个字节重启后会变。  
-开启该选项后可以恢复WAN、LAN原厂MAC顺序，同时将WiFi MAC写到无线对应dat文件中，以便固定WiFi MAC。  
+- #### 说明
+源码中的WAN、LAN地址顺序已修复
+RAX3000M算力版（RAX3000M-eMMC）的eMMC默认使用26MHz频率
+RAX3000Z增强版（XR30-eMMC）的eMMC默认使用52MHz频率
 
-- #### 2. Use nx30pro eeprom
+- #### 1. Use nx30pro eeprom and fixed WiFi MAC address
 该选项默认开启，即使用nx30pro的高功率eeprom，不需要请取消打钩。  
 不使用独立fem无线功放的MT7981B路由器可以通过替换高功率的eeprom提高信号强度。  
 RAX3000M/XR30的factory eeprom设置功率不高，2.4G是23dBm、5G是22dBm，使用NX30 PRO的高功率eeprom，2.4G可提升至25dBm、5G提升至24dBm。  
-开启该选项会使用NX30 PRO的eeprom替换掉固件中的MT7981_iPAiLNA_EEPROM.bin文件，并写入WiFi MAC到dat以便固定MAC。  
+开启该选项会使用NX30 PRO的eeprom替换掉固件中的MT7981_iPAiLNA_EEPROM.bin文件，并将facotry分区读取的MAC写入到dat以便固定WiFi MAC。  
 
-- #### 3. eMMC use 52MHz max-frequency
-该选项默认关闭，即按源码DTS中eMMC频率26MHz编译，需要设置为52MHz请打钩。  
-RAX3000M算力版原厂机子选用的eMMC颗粒品质不太行，不能运行在MT7981B eMMC最高的52MHz频率，所以原厂固件使用的是26MHz频率。  
-除非更换过eMMC，不然不建议使用52MHz，基本跑一段时间都会出问题，老实使用26MHz即可。  
-RAX3000Z增强版原厂固件使用的是52MHz频率，没有机子无法测试eMMC是否有问题，云适配。  
-yml脚本中固定设置了eMMC使用highspeed，以达到设置的26MHz、52MHz。  
-
-- #### 4. Use luci-app-mtk wifi config
+- #### 2. Use luci-app-mtk wifi config
 该选项默认关闭，即按.mtwifi-cfg.config配置文件，使用mtwifi-cfg配置工具，需要使用旧的luci-app-mtk无线配置工具请打钩。  
 mtwifi-cfg：为mtwifi设计的无线配置工具，兼容openwrt原生luci和netifd，可调整无线驱动的参数较少，配置界面美观友好，由于是新开发的工具，可能存在一些问题。  
 luci-app-mtk：源自mtk-sdk提供的配置工具，需要配合wifi-profile脚本使用，可调整无线驱动的几乎所有参数，配置界面较为简陋。  
@@ -101,7 +92,7 @@ CONFIG_PACKAGE_luci-i18n-mtwifi-cfg-zh-cn=y
 CONFIG_PACKAGE_mtwifi-cfg=y  
 CONFIG_PACKAGE_lua-cjson=y  
 
-- #### 5. Not build luci-app-dockerman
+- #### 3. Not build luci-app-dockerman
 该选项默认关闭，即按.mtwifi-cfg.config配置文件编译dockerman，不需要编译dockerman请打钩。  
 .mtwifi-cfg.config配置文件中已设置编译dockerman：  
 CONFIG_PACKAGE_luci-app-dockerman=y  
