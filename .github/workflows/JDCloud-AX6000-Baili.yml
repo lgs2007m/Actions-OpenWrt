@@ -64,7 +64,7 @@ env:
   OPENWRT_NAME: hanwckf
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
-  FEEDS_CONF: feeds.conf.default
+  FEEDS_CONF: JDCloud-AX6000-Baili/feeds.conf.default
   CONFIG_FILE: JDCloud-AX6000-Baili/.mtwifi-cfg.config
   DIY_P1_SH: JDCloud-AX6000-Baili/diy-part1.sh
   DIY_P2_SH: JDCloud-AX6000-Baili/diy-part2.sh
