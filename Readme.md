@@ -39,7 +39,7 @@ CONFIG_MTK_MT7986_NEW_FW=y
 CONFIG_WARP_NEW_FW=y  
 
 - #### 2. Use GSW switch driver (non-DSA)
-该选项默认关闭，即按源码DTS中MT7531交换机的设置使用DSA交换机驱动，需要使用GSW交换机驱动请打钩。  
+该选项默认开启，即使用GSW交换机驱动，需要按源码使用DSA交换机驱动的，请取消打钩。  
 GSW：Gigabit Switch swconfig 模式，有交换机配置插件，不过京东云百里AX6000的WAN是单独接CPU的2.5G PHY RTL8221B，不接在MT7531交换机上，所以WAN不支持在交换机配置插件中设置VLAN。  
 DSA：Distributed Switch Architecture 分布式交换架构模式，DSA去除了交换机配置插件，但在“网口”-“接口”-“设备”选项卡中的br-lan设备中的网桥VLAN过滤中可以查看网口状态设置VLAN。  
 原厂固件和hanwckf大佬源码中京东云百里AX6000都是使用DSA的，hanwckf大佬、237大佬推荐使用GSW，使用GSW在切换WAN、LAN时硬件加速不失效。  

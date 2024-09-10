@@ -40,7 +40,7 @@ on:
       GSW:
         description: 'Use GSW switch driver (non-DSA)'
         required: true
-        default: false
+        default: true
         type: boolean
       APP_MTK:
         description: 'Use luci-app-mtk wifi config'
