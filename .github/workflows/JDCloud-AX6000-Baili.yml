@@ -14,11 +14,6 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
-      MAC_ORDER:
-        description: 'Use the original MAC address order'
-        required: true
-        default: true
-        type: boolean
       WA_FW:
         description: 'Choose mt_wifi firmware'
         required: true
@@ -144,21 +139,6 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
-    - name: 使用原厂MAC地址顺序
-      if: github.event.inputs.MAC_ORDER == 'true'
-      run: |
-        cd openwrt
-        ## 调换lan、wan的MAC地址
-        sed -i '/jdcloud,re-cp-03)/{n; s/wan_mac=$(mmc_get_mac_binary factory 0x2a)/wan_mac=$(mmc_get_mac_binary factory 0x24)/; n; s/lan_mac=$(mmc_get_mac_binary factory 0x24)/lan_mac=$(mmc_get_mac_binary factory 0x2A)/}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
-        ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
-        echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
-        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7986-ax6000.dbdc.b0.dat
-        \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
-        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7986-ax6000.dbdc.b1.dat" > temp_insert.txt
-        ## 将文本内容写入02_network
-        sed -i '/mediatek_setup_macs()/,/exit/ {/jdcloud,re-cp-03)/ {n;n;n;r temp_insert.txt
-        }}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
-        
     - name: 选择无线firmware
       run: |
         cp -r JDCloud-AX6000-Baili/firmware/mt_wifi/mt7986-fw-jdc openwrt/package/mtk/drivers/mt_wifi/files
@@ -227,11 +207,6 @@ jobs:
         [ -s TARGET_NAME ] && echo "TARGET_NAME=$(cat TARGET_NAME)" >> $GITHUB_ENV
         sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
-        if sed -n '/jdcloud,re-cp-03)/,/;;/p' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network | grep -q 'wan_mac=$(mmc_get_mac_binary factory 0x24)'; then
-                echo "MAC_FIX=-MAC_fix" >> $GITHUB_ENV
-        else
-                echo "MAC_FIX=" >> $GITHUB_ENV
-        fi
         if grep -q 'CONFIG_MTK_MT7986_NEW_FW=y' .config; then
                 echo "WA_FW=$(grep 'MT7986_FW_DIR :=' package/mtk/drivers/mt_wifi/Makefile | awk -F' ' '{print $3}')" >> $GITHUB_ENV
         else
@@ -289,11 +264,6 @@ jobs:
         touch release.txt
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ "${{ env.MAC_FIX }}" == '-MAC_fix' ]]; then
-               echo "- 修改源码 使用原厂的MAC地址顺序" >> release.txt
-        else
-               echo "- 未修改源码中的MAC地址顺序" >> release.txt
-        fi
         echo "- mt_wifi firmware: ${{ env.WA_FW }}" >> release.txt
         echo "- &ensp;&ensp;warp firmware: ${{ env.WO_FW }}" >> release.txt
         if [[ "${{ env.SWITCH }}" == '-gsw' ]]; then
