@@ -11,7 +11,7 @@
 ## JDCloud-AX6000-Baili workflow 手动运行可选项：
 - Choose mt_wifi firmware
 - Choose warp firmware
-- [ ] Use GSW switch driver (non-DSA)
+- [x] Use GSW switch driver (non-DSA)
 - [ ] Use luci-app-mtk wifi config
 - [ ] Not build luci-app-dockerman
 
