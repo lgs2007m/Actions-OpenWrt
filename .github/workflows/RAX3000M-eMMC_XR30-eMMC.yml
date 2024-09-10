@@ -44,6 +44,7 @@ env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
+  RAX3000M_EMMC_DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
   CONFIG_FILE: RAX3000M-eMMC_XR30-eMMC/.mtwifi-cfg.config
   DIY_P1_SH: RAX3000M-eMMC_XR30-eMMC/diy-part1.sh
   DIY_P2_SH: RAX3000M-eMMC_XR30-eMMC/diy-part2.sh
