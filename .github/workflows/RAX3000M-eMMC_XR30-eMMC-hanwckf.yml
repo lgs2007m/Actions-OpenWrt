@@ -43,11 +43,11 @@ env:
   UPLOAD_TAG_NAME: rax3000m-emmc_xr30-emmc
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
-  FEEDS_CONF: RAX3000M-eMMC_XR30-eMMC/feeds.conf.default
+  FEEDS_CONF: RAX3000M-eMMC_XR30-eMMC-hanwckf/feeds.conf.default
   RAX3000M_EMMC_DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
-  CONFIG_FILE: RAX3000M-eMMC_XR30-eMMC/.mtwifi-cfg.config
-  DIY_P1_SH: RAX3000M-eMMC_XR30-eMMC/diy-part1.sh
-  DIY_P2_SH: RAX3000M-eMMC_XR30-eMMC/diy-part2.sh
+  CONFIG_FILE: RAX3000M-eMMC_XR30-eMMC-hanwckf/.mtwifi-cfg.config
+  DIY_P1_SH: RAX3000M-eMMC_XR30-eMMC-hanwckf/diy-part1.sh
+  DIY_P2_SH: RAX3000M-eMMC_XR30-eMMC-hanwckf/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -129,7 +129,7 @@ jobs:
     - name: 使用nx30pro的高功率eeprom并固定WiFi MAC地址
       if: github.event.inputs.EEPROM == 'true'
       run: |
-        cp RAX3000M-eMMC_XR30-eMMC/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
+        cp RAX3000M-eMMC_XR30-eMMC-hanwckf/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin
         cd openwrt
         ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
         echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
@@ -174,7 +174,7 @@ jobs:
     - name: 编译固件
       id: compile
       run: |
-        md5_file1=$(md5sum "RAX3000M-eMMC_XR30-eMMC/nx30pro_eeprom.bin" | awk '{print $1}')
+        md5_file1=$(md5sum "RAX3000M-eMMC_XR30-eMMC-hanwckf/nx30pro_eeprom.bin" | awk '{print $1}')
         md5_file2=$(md5sum "openwrt/package/mtk/drivers/mt_wifi/files/mt7981-default-eeprom/MT7981_iPAiLNA_EEPROM.bin" | awk '{print $1}')
         cd openwrt
         echo -e "$(nproc) thread compile"
