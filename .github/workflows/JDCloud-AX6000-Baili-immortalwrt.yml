@@ -73,11 +73,11 @@ jobs:
         
         # all of these default to true, but feel free to set to
         # "false" if necessary for your workflow
-        android: false
-        dotnet: false
-        haskell: false
-        large-packages: false
-        swap-storage: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        swap-storage: true
         
     - name: 下载固件源码
       working-directory: /workdir
