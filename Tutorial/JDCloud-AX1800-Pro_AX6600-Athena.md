@@ -342,7 +342,7 @@ drwxrwxrwx    2 root     root          1024 Mar  1  2022 sda1
 ```
 只备份GPT分区表和mmcblk0p1-26，mmcblk0p27是京东云跑分缓存数据，太大且恢复跑分可以重新缓存，不备份了。  
 建议分开备份分区，后面需要的时候只要按顺序合并就得到了mmcblk0p0-26.img镜像了。  
-复制命令粘贴一起执行：  
+复制下面全部命令粘贴执行，最后一行sync回车执行即可，注意看最后一个swap分区是否备份完成：  
 ```
 dd if=/dev/mmcblk0 bs=512 count=34 of=/mnt/mmcblk0p27/mmcblk0_GPT.bin conv=fsync
 dd if=/dev/mmcblk0p1 of=/mnt/mmcblk0p27/mmcblk0p1_0SBL1.bin conv=fsync
@@ -371,7 +371,7 @@ dd if=/dev/mmcblk0p23 of=/mnt/mmcblk0p27/mmcblk0p23_0ETHPHYFW.bin conv=fsync
 dd if=/dev/mmcblk0p24 of=/mnt/mmcblk0p27/mmcblk0p24_plugin.bin conv=fsync
 dd if=/dev/mmcblk0p25 of=/mnt/mmcblk0p27/mmcblk0p25_log.bin conv=fsync
 dd if=/dev/mmcblk0p26 of=/mnt/mmcblk0p27/mmcblk0p26_swap.bin conv=fsync
-
+sync
 ```
 注意亚瑟和雅典娜GPT分区表是不一样的，因为有三个分区大小是不一样的：  
 ART：    亚瑟256KiB    雅典娜512KiB  
