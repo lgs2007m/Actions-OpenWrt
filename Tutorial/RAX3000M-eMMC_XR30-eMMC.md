@@ -152,17 +152,17 @@ md5sum /tmp/mt7981_cmcc_*fip*.bin
 2024.10.07版的uboot，是编译输出的fip文件刷入fip分区后的分区备份，所以有2MB大小，md5sum是：  
 ```
 root@RAX3000M:~# md5sum /tmp/mt7981_cmcc_*fip*.bin
-ae0f38e636d0f51295644257e823f32f  /tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241007.bin
-9913490b64e912f180d14c287081cb1f  /tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241007.bin
+0dae75b7aac3a2755b1b7e30760f6545  /tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241010.bin
+c876dddc7b989edc402abd434891a966  /tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241010.bin
 ```
 核对上传uboot的md5正常后，输入命令刷写uboot所在的fip分区。  
 RAX3000M eMMC算力版用这个命令：  
 ```
-dd if=/tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241007.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
+dd if=/tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241010.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
 ```
 RAX3000Z增强版用这个命令：  
 ```
-dd if=/tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241007.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
+dd if=/tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241010.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
 ```
 验证fip分区的md5和刷入文件一样即可，输入命令：  
 ```
@@ -171,12 +171,12 @@ md5sum $(blkid -t PARTLABEL=fip -o device)
 RAX3000M eMMC算力版：  
 ```
 root@RAX3000M:~# md5sum $(blkid -t PARTLABEL=fip -o device)
-ae0f38e636d0f51295644257e823f32f  /dev/mmcblk0p3
+0dae75b7aac3a2755b1b7e30760f6545  /dev/mmcblk0p3
 ```
 RAX3000Z增强版：  
 ```
 root@XR30:~# md5sum $(blkid -t PARTLABEL=fip -o device)
-9913490b64e912f180d14c287081cb1f  /dev/mmcblk0p3
+c876dddc7b989edc402abd434891a966  /dev/mmcblk0p3
 ```
 到这里uboot已经刷好了，可以断电重启，进uboot刷我提供的ImmortalWrt固件，然后接着刷gpt分区表。  
 
@@ -299,15 +299,22 @@ mt798x eMMC机子的bl2在boot0硬件分区，不受userdata硬件分区的gpt�
 
 - ### 4.uboot刷固件和格式化data分区
 我改的这个uboot不支持DHCP，电脑需要设置ip 192.168.1.2/24，连接网线到路由器lan口，路由上电按reset，等待灯变为蓝色，说明uboot webui已启动，可以松开按钮，浏览器打开192.168.1.1，上传固件刷写成功后绿灯会亮3秒，然后重启。注意：其他大佬的uboot可能指示灯不一样。  
-我改的这个uboot是2024.10.07编译的：  
-RAX3000M算力版：U-Boot 2022.07-rc3 (Oct 07 2024 - 16:43:34 +0800)  
-RAX3000Z增强版：U-Boot 2022.07-rc3 (Oct 07 2024 - 16:43:56 +0800)  
+我改的这个uboot是2024.10.10编译的：  
+RAX3000M算力版：U-Boot 2022.07-rc3 (Oct 10 2024 - 14:22:45 +0800)  
+RAX3000Z增强版：U-Boot 2022.07-rc3 (Oct 10 2024 - 14:23:04 +0800)  
 
 进入uboot webui页面后，最下方会显示这个编译日期，可以作为判断是否刷的是我改的uboot的标识。  
 uboot不仅可以刷固件，还可以更新bl2、uboot和gpt，打开相应网页即可，非必要不需要更新：  
-http://192.168.1.1/bl2.html  
-http://192.168.1.1/uboot.html  
-http://192.168.1.1/gpt.html  
+http://192.168.1.1                  刷写固件  
+http://192.168.1.1/uboot.html       刷写uboot  
+http://192.168.1.1/bl2.html         刷写bl2，注意刷写eMMC的bl2文件不大于1MB  
+http://192.168.1.1/gpt.html         刷写eMMC机型的gpt分区表  
+http://192.168.1.1/simg.html        刷写single image镜像（新增功能）  
+http://192.168.1.1/initramfs.html   刷写内存启动固件initramfs  
+注意：刷写bl2、gpt、simg不会验证文件，请一定做好原机备份并确认上传文件的有效性，特别是simg！！！  
+关于single image：  
+eMMC的是从gpt到最后一个分区的合并镜像，只合并到fip分区也可，不包含bl2，bl2需要单独刷写  
+注意：eMMC从gpt到第一个分区间有段空白也要合并在内，请用我教程备份的分区bin文件进行合并  
 
 uboot刷好第三方OP系统后，SSH登录用命令格式化下最后一个data分区。  
 ```
@@ -375,9 +382,17 @@ dd if=/dev/zero of=$(blkid -t PARTLABEL=rootfs_data -o device) conv=fsync
 不支持DHCP，请设置固定IP后访问相应的Web failsafe UI地址，Web failsafe UI启动后可以通过按Ctrl+C回到Uboot控制台。  
 因为mtk_uartboot加载uboot是临时uboot，需要进入uboot webui对应页面重新刷写变砖的分区。  
 针对eMMC机型有以下几个页面：  
-http://192.168.1.1/uboot.html    刷写uboot  
-http://192.168.1.1/bl2.html      刷写bl2，注意刷写eMMC的bl2文件不大于1MB  
-http://192.168.1.1/gpt.html      刷写eMMC机型的gpt分区表  
+http://192.168.1.1                  刷写固件，救砖一般不用  
+http://192.168.1.1/uboot.html       刷写uboot  
+http://192.168.1.1/bl2.html         刷写bl2，注意刷写eMMC的bl2文件不大于1MB  
+http://192.168.1.1/gpt.html         刷写eMMC机型的gpt分区表  
+http://192.168.1.1/simg.html        刷写single image镜像（新增功能）  
+http://192.168.1.1/initramfs.html   刷写内存启动固件initramfs  
+注意：刷写bl2、gpt、simg不会验证文件，请一定做好原机备份并确认上传文件的有效性，特别是simg！！！  
+关于single image：  
+eMMC的是从gpt到最后一个分区的合并镜像，只合并到fip分区也可，不包含bl2，bl2需要单独刷写  
+注意：eMMC从gpt到第一个分区间有段空白也要合并在内，请用我教程备份的分区bin文件进行合并  
+
 如果存储无线校准数据eeprom的factory分区刷没了，救砖刷固件后无线可能起不来，需要有线进系统恢复该分区。  
 ```
 dd if=/tmp/mmcblk0p2_factory.bin of=$(blkid -t PARTLABEL=factory -o device) conv=fsync

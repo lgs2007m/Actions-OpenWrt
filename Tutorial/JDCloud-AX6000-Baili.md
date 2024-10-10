@@ -145,11 +145,11 @@ WinScp软件登录路由器，协议SCP，IP 192.168.68.1，端口22，点击高
 ```
 md5sum /tmp/mt7986_jdcloud_re-cp-03*.bin
 ```
-2024.10.07版bl2、uboot的md5值是：  
+2024.10.10版bl2、uboot的md5值是：  
 ```
-root@OpenWrt:~# md5sum /tmp/mt7986_jdcloud_re-cp-03-*_mod.bin
-07ae6f780ec1a70bff5da77b42ad2284  /tmp/mt7986_jdcloud_re-cp-03-bl2_20241007.bin
-f6ed2f974105a4787680b5d59a5af388  /tmp/mt7986_jdcloud_re-cp-03-fip_legacy-and-fit_20241007.bin
+root@OpenWrt:~# md5sum /tmp/mt7986_jdcloud_re-cp-03*.bin
+6c0d654a9dc261b769b472f1e3bb4df9  /tmp/mt7986_jdcloud_re-cp-03-bl2_20241010.bin
+053cb614b1309f5d04544fb3380548ed  /tmp/mt7986_jdcloud_re-cp-03-fip_legacy-and-fit_20241010.bin
 ```
 核对md5正常后，先输入下面命令切换到shell (ash)：  
 ```
@@ -158,9 +158,9 @@ ash
 然后一起复制下面命令粘贴执行，刷写bl2和uboot：  
 ```
 echo 0 > /sys/block/mmcblk0boot0/force_ro
-dd if=/tmp/mt7986_jdcloud_re-cp-03-bl2_20241007.bin of=/dev/mmcblk0boot0 conv=fsync
+dd if=/tmp/mt7986_jdcloud_re-cp-03-bl2_20241010.bin of=/dev/mmcblk0boot0 conv=fsync
 echo 1 > /sys/block/mmcblk0boot0/force_ro
-dd if=/tmp/mt7986_jdcloud_re-cp-03-fip_legacy-and-fit_20241007.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
+dd if=/tmp/mt7986_jdcloud_re-cp-03-fip_legacy-and-fit_20241010.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
 sync
 ```
 最后一行sync回车执行，刷写完没有报错，则检查下分区的md5值，和我一样即可，不一样就重新刷，不能重启！！  
@@ -170,8 +170,8 @@ md5sum /dev/mmcblk0boot0 && md5sum $(blkid -t PARTLABEL=fip -o device)
 输出结果和我一样即可：  
 ```
 root@OpenWrt:~# md5sum /dev/mmcblk0boot0 && md5sum $(blkid -t PARTLABEL=fip -o device)
-8634cc3c01f0d1cd3fe7860372d9c0ac  /dev/mmcblk0boot0
-f6ed2f974105a4787680b5d59a5af388  /dev/mmcblk0p4
+7dfc7a41871f6dcfd8fbcdc23706ee5c  /dev/mmcblk0boot0
+053cb614b1309f5d04544fb3380548ed  /dev/mmcblk0p4
 ```
 到这里bl2和uboot已经刷好了，不要重启，接着刷gpt分区表。  
 
@@ -297,12 +297,19 @@ mt798x eMMC机子的bl2在boot0硬件分区，不受userdata硬件分区的gpt�
 
 - ### 4.uboot刷固件和格式化storage分区
 我改的这个uboot不支持DHCP，电脑需要设置ip 192.168.1.2/24，连接网线到路由器lan口，路由上电按reset，等待灯变为蓝色，说明uboot webui已启动，可以松开按钮，浏览器打开192.168.1.1，上传固件刷写成功后绿灯会亮3秒，然后重启。注意：其他大佬的uboot可能指示灯不一样。  
-我改的这个uboot是2024.10.07编译的 U-Boot 2022.07-rc3 (Oct 07 2024 - 16:44:05 +0800)  
+我改的这个uboot是2024.10.10编译的 U-Boot 2022.07-rc3 (Oct 10 2024 - 14:23:13 +0800)  
 进入uboot webui页面后，最下方会显示这个编译日期，可以作为判断是否刷的是我改的uboot的标识。  
 uboot不仅可以刷固件，还可以更新bl2、uboot和gpt，打开相应网页即可，非必要不需要更新：  
-http://192.168.1.1/bl2.html  
-http://192.168.1.1/uboot.html  
-http://192.168.1.1/gpt.html  
+http://192.168.1.1                  刷写固件  
+http://192.168.1.1/uboot.html       刷写uboot  
+http://192.168.1.1/bl2.html         刷写bl2，注意刷写eMMC的bl2文件不大于1MB  
+http://192.168.1.1/gpt.html         刷写eMMC机型的gpt分区表  
+http://192.168.1.1/simg.html        刷写single image镜像（新增功能）  
+http://192.168.1.1/initramfs.html   刷写内存启动固件initramfs  
+注意：刷写bl2、gpt、simg不会验证文件，请一定做好原机备份并确认上传文件的有效性，特别是simg！！！  
+关于single image：  
+eMMC的是从gpt到最后一个分区的合并镜像，只合并到fip分区也可，不包含bl2，bl2需要单独刷写  
+注意：eMMC从gpt到第一个分区间有段空白也要合并在内，请用我教程备份的分区bin文件进行合并  
 
 uboot刷好第三方OP系统后，SSH登录用命令格式化下最后一个storage分区。  
 ```
@@ -353,9 +360,17 @@ swapon $(blkid -t PARTLABEL=swap -o device)
 不支持DHCP，请设置固定IP后访问相应的Web failsafe UI地址，Web failsafe UI启动后可以通过按Ctrl+C回到Uboot控制台。  
 因为mtk_uartboot加载uboot是临时uboot，需要进入uboot webui对应页面重新刷写变砖的分区。  
 针对eMMC机型有以下几个页面：  
-http://192.168.1.1/uboot.html    刷写uboot  
-http://192.168.1.1/bl2.html      刷写bl2，注意刷写eMMC的bl2文件不大于1MB  
-http://192.168.1.1/gpt.html      刷写eMMC机型的gpt分区表  
+http://192.168.1.1                  刷写固件，救砖一般不用  
+http://192.168.1.1/uboot.html       刷写uboot  
+http://192.168.1.1/bl2.html         刷写bl2，注意刷写eMMC的bl2文件不大于1MB  
+http://192.168.1.1/gpt.html         刷写eMMC机型的gpt分区表  
+http://192.168.1.1/simg.html        刷写single image镜像（新增功能）  
+http://192.168.1.1/initramfs.html   刷写内存启动固件initramfs  
+注意：刷写bl2、gpt、simg不会验证文件，请一定做好原机备份并确认上传文件的有效性，特别是simg！！！  
+关于single image：  
+eMMC的是从gpt到最后一个分区的合并镜像，只合并到fip分区也可，不包含bl2，bl2需要单独刷写  
+注意：eMMC从gpt到第一个分区间有段空白也要合并在内，请用我教程备份的分区bin文件进行合并  
+
 如果存储无线校准数据eeprom的factory分区刷没了，救砖刷固件后无线可能起不来，需要有线进系统恢复该分区。  
 ```
 dd if=/tmp/mmcblk0p3_factory.bin of=$(blkid -t PARTLABEL=factory -o device) conv=fsync
