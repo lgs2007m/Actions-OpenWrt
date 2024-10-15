@@ -14,29 +14,14 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
-      WA_FW:
-        description: 'Choose mt_wifi firmware'
+      DRIVER:
+        description: 'Choose WiFi Driver'
         required: true
-        default: 'mt7986-fw-20230808'
+        default: 'v7.6.7.2'
         type: choice
         options:
-        - no-new-fw
-        - mt7986-fw-20221208
-        - mt7986-fw-jdc
-        - mt7986-fw-20230421
-        - mt7986-fw-20230808
-        - mt7986-fw-20231024
-      WO_FW:
-        description: 'Choose warp firmware'
-        required: true
-        default: 'mt7986-fw-20230808'
-        type: choice
-        options:
-        - no-new-fw
-        - mt7986-fw-jdc
-        - mt7986-fw-20230421
-        - mt7986-fw-20230808
-        - mt7986-fw-20231024
+        - v7.6.7.2
+        - v7.6.6.1
       GSW:
         description: 'Use GSW switch driver (non-DSA)'
         required: true
@@ -139,20 +124,11 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
-    - name: 选择无线firmware
+    - name: 设置WiFi驱动版本
       run: |
-        cp -r JDCloud-AX6000-Baili-hanwckf/firmware/mt_wifi/mt7986-fw-jdc openwrt/package/mtk/drivers/mt_wifi/files
-        cp -r JDCloud-AX6000-Baili-hanwckf/firmware/warp/mt7986-fw-jdc openwrt/package/mtk/drivers/warp/files
         cd openwrt
-        if [ ${{ github.event.inputs.WA_FW }} == 'no-new-fw' ]; then
-                sed -i '/CONFIG_MTK_MT7986_NEW_FW=y/d' .config
-        else
-                sed -i 's/^MT7986_FW_DIR := mt7986-fw.*/MT7986_FW_DIR := ${{github.event.inputs.WA_FW}}/g' package/mtk/drivers/mt_wifi/Makefile
-        fi
-        if [ ${{ github.event.inputs.WO_FW }} == 'no-new-fw' ]; then
-                sed -i '/CONFIG_WARP_NEW_FW=y/d' .config
-        else
-                sed -i 's/^MT7986_NEW_WOFW_DIR := mt7986-fw.*/MT7986_NEW_WOFW_DIR := ${{github.event.inputs.WO_FW}}/g' package/mtk/drivers/warp/Makefile
+        if [ ${{ github.event.inputs.DRIVER }} == 'v7.6.6.1' ]; then
+                sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
         fi
         
     - name: 使用GSW交换机驱动（非DSA）
@@ -207,15 +183,10 @@ jobs:
         [ -s TARGET_NAME ] && echo "TARGET_NAME=$(cat TARGET_NAME)" >> $GITHUB_ENV
         sed -nE 's/.*(192.168\.[0-9]+\.[0-9]+).*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
-        if grep -q 'CONFIG_MTK_MT7986_NEW_FW=y' .config; then
-                echo "WA_FW=$(grep 'MT7986_FW_DIR :=' package/mtk/drivers/mt_wifi/Makefile | awk -F' ' '{print $3}')" >> $GITHUB_ENV
+        if grep -q 'CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y' .config; then
+                echo "DRIVER_VERSION=-v7672" >> $GITHUB_ENV
         else
-                echo "WA_FW=no-new-fw" >> $GITHUB_ENV
-        fi
-        if grep -q 'CONFIG_WARP_NEW_FW=y' .config; then
-                echo "WO_FW=$(grep 'MT7986_NEW_WOFW_DIR :=' package/mtk/drivers/warp/Makefile | awk -F' ' '{print $3}')" >> $GITHUB_ENV
-        else
-                echo "WO_FW=no-new-fw" >> $GITHUB_ENV
+                echo "DRIVER_VERSION=-v7661" >> $GITHUB_ENV
         fi
         if sed -n '/jdcloud,re-cp-03)/,/;;/p' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network | grep -q 'ucidef_add_switch "switch0"'; then
                 echo "SWITCH=-gsw" >> $GITHUB_ENV
@@ -246,7 +217,7 @@ jobs:
         cd openwrt/bin/targets/*/*
         rm -rf packages
         sudo -E apt-get -qq install rename
-        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SWITCH }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}/' *
+        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}/' *
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
@@ -254,7 +225,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SWITCH }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
         
     - name: 生成固件Release标签
@@ -263,9 +234,13 @@ jobs:
       run: |
         touch release.txt
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
+        echo "- 使用分支：${{ env.REPO_BRANCH }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        echo "- mt_wifi firmware: ${{ env.WA_FW }}" >> release.txt
-        echo "- &ensp;&ensp;warp firmware: ${{ env.WO_FW }}" >> release.txt
+        if [[ "${{ env.DRIVER_VERSION }}" == '-v7672' ]]; then
+               echo "- 使用WiFi驱动版本v7.6.7.2" >> release.txt
+        else
+               echo "- 使用WiFi驱动版本v7.6.6.1" >> release.txt
+        fi
         if [[ "${{ env.SWITCH }}" == '-gsw' ]]; then
                echo "- 使用GSW交换机驱动（非DSA）" >> release.txt
         else
@@ -281,7 +256,7 @@ jobs:
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SWITCH }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
         
     - name: 发布固件至Release
@@ -291,6 +266,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.SWITCH }}${{ env.WIFI_INTERFACE }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
