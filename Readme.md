@@ -23,7 +23,7 @@
 默认使用WiFi驱动版本v7.6.7.2，可选旧版驱动v7.6.6.1。  
 SSH查看WiFi驱动版本：  
 ```
-strings /lib/modules/$(uname -r)/mt_wifi.ko | grep -e 7.6.7.2 -e 7.6.6.1
+strings /lib/modules/$(uname -r)/mt_wifi.ko | grep -E '7\.6\.[0-9]+\.[0-9]+'
 ```
 
 - #### 2. Use GSW switch driver (non-DSA)
@@ -90,7 +90,7 @@ RAX3000Z增强版（XR30-eMMC）的eMMC默认使用52MHz频率
 默认使用WiFi驱动版本v7.6.7.2，可选旧版驱动v7.6.6.1。  
 SSH查看WiFi驱动版本：  
 ```
-strings /lib/modules/$(uname -r)/mt_wifi.ko | grep -e 7.6.7.2 -e 7.6.6.1
+strings /lib/modules/$(uname -r)/mt_wifi.ko | grep -E '7\.6\.[0-9]+\.[0-9]+'
 ```
 
 - #### 2. Use nx30pro eeprom and fixed WiFi MAC address
