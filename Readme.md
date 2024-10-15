@@ -50,20 +50,21 @@ CONFIG_PACKAGE_lua-cjson=y
 CONFIG_PACKAGE_luci-app-dockerman=y  
 
 - #### Other
-百里5G无线发射功率23dBm，2.4G发送功率25dBm。大佬们已研究出修改5G发射功率的方法。
-其中各个功率十六进制数据代表如下：
-23dBm x2A
-24dBm x2B
-25dBm x2C 或 x2D
-百里直接SSH使用下面命令，软修改（即不修改factory分区）5G为24dBm，修改好之后reboot重启即可。
-MT7986_ePAeLNA_EEPROM_AX6000.bin文件只在固件第一次启动时从factory复制出来，所以修改一次即可。
+百里5G无线发射功率23dBm，2.4G发送功率25dBm。大佬们已研究出修改5G发射功率的方法。  
+其中各个功率十六进制数据代表如下：  
+23dBm x2A  
+24dBm x2B  
+25dBm x2C 或 x2D  
+百里直接SSH使用下面命令，软修改（即不修改factory分区）5G为24dBm，修改好之后reboot重启即可。  
+MT7986_ePAeLNA_EEPROM_AX6000.bin文件只在固件第一次启动时从factory复制出来，所以修改一次即可。  
 ```
 hex_value='\x2B'
 printf "$hex_value%.0s" {1..20} > /tmp/tmp.bin
 dd if=/tmp/tmp.bin of=/lib/firmware/MT7986_ePAeLNA_EEPROM_AX6000.bin bs=1 seek=$((0x445)) conv=notrunc
 ```
-当然也可以直接硬修改factory分区，使得以后每次刷新固件都不用再修改了。
-首先备份好原厂factory分区，然后修改MT7986_ePAeLNA_EEPROM_AX6000.bin并写入factory分区，再备份一次factory分区。自行到tmp下载保存好备份，然后reboot重启即可。
+当然也可以直接硬修改factory分区，使得以后每次刷新固件都不用再修改了。  
+首先备份好原厂factory分区，然后修改MT7986_ePAeLNA_EEPROM_AX6000.bin并写入factory分区，再备份一次factory分区。  
+自行到tmp下载保存好备份，然后reboot重启即可。  
 ```
 hex_value='\x2B'
 printf "$hex_value%.0s" {1..20} > /tmp/tmp.bin
