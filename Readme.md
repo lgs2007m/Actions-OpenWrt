@@ -8,7 +8,7 @@
 
 ### 刷砖也不怕！可以通过串口救砖：[MediaTek Filogic 系列路由器串口救砖教程](https://www.cnblogs.com/p123/p/18046679)
 
-### 我的刷机教程[Tutorial](https://github.com/lgs2007m/Actions-OpenWrt/tree/main/Tutorial)
+### 我的刷机教程：[Tutorial](https://github.com/lgs2007m/Actions-OpenWrt/tree/main/Tutorial)
 ---
 ## JDCloud-AX6000-Baili workflow 手动运行可选项：
 - Choose WiFi Driver
