@@ -12,12 +12,12 @@
 ---
 ## JDCloud-AX6000-Baili workflow 手动运行可选项：
 - Choose WiFi Driver
-- [x] Use GSW switch driver (non-DSA)
+- [ ] Use DSA Switch Driver
 - [ ] Use luci-app-mtk wifi config
 - [ ] Not build luci-app-dockerman
 
 - #### 说明
-源码中的WAN、LAN地址顺序已修复并固定了WiFi MAC地址  
+源码中的WAN、LAN地址顺序已修复并固定了WiFi MAC地址，交换机驱动已改为使用GSW  
 
 - #### 1. Choose WiFi Driver
 默认使用WiFi驱动版本v7.6.7.2，可选旧版驱动v7.6.6.1。  
@@ -26,11 +26,12 @@ SSH查看WiFi驱动版本：
 strings /lib/modules/$(uname -r)/mt_wifi.ko | grep -E '7\.6\.[0-9]+\.[0-9]+'
 ```
 
-- #### 2. Use GSW switch driver (non-DSA)
-该选项默认开启，即使用GSW交换机驱动，需要按源码使用DSA交换机驱动的，请取消打钩。  
+- #### 2. Use DSA Switch Driver
+该选项默认关闭，即使用GSW交换机驱动，需要使用DSA交换机驱动的，请打钩。  
 GSW：Gigabit Switch swconfig 模式，有交换机配置插件，不过京东云百里AX6000的WAN是单独接CPU的2.5G PHY RTL8221B，不接在MT7531交换机上，所以WAN不支持在交换机配置插件中设置VLAN。  
-DSA：Distributed Switch Architecture 分布式交换架构模式，DSA去除了交换机配置插件，但在“网口”-“接口”-“设备”选项卡中的br-lan设备中的网桥VLAN过滤中可以查看网口状态设置VLAN。  
-原厂固件和hanwckf大佬源码中京东云百里AX6000都是使用DSA的，hanwckf大佬、237大佬推荐使用GSW，使用GSW在切换WAN、LAN时硬件加速不失效。  
+DSA：Distributed Switch Architecture 分布式交换架构模式，DSA没有单独的交换机配置插件，但在“网口”-“接口”-“设备”选项卡中的br-lan设备中的网桥VLAN过滤中可以查看网口状态设置VLAN。  
+百里原厂固件使用的是DSA，hanwckf大佬源码中百里的交换机驱动先前是DSA，在切换WAN、LAN时硬件加速可能有问题。  
+目前hanwckf大佬源码中百里已改为使用GSW，使用GSW在切换WAN、LAN时硬件加速不失效。  
 两者具体区别可以参考OpenWrt社区资料：[converting-to-dsa](https://openwrt.org/docs/guide-user/network/dsa/converting-to-dsa) [dsa-mini-tutorial](https://openwrt.org/docs/guide-user/network/dsa/dsa-mini-tutorial)  
 
 - #### 3. Use luci-app-mtk wifi config

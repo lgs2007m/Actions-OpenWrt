@@ -22,10 +22,10 @@ on:
         options:
         - v7.6.7.2
         - v7.6.6.1
-      GSW:
-        description: 'Use GSW switch driver (non-DSA)'
+      DSA:
+        description: 'Use DSA Switch Driver'
         required: true
-        default: true
+        default: false
         type: boolean
       APP_MTK:
         description: 'Use luci-app-mtk wifi config'
@@ -131,14 +131,12 @@ jobs:
                 sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
         fi
         
-    - name: 使用GSW交换机驱动（非DSA）
-      if: github.event.inputs.GSW == 'true'
+    - name: 使用DSA交换机驱动
+      if: github.event.inputs.DSA == 'true'
       run: |
-        cp JDCloud-AX6000-Baili-hanwckf/mt7986a-gsw-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
+        cp JDCloud-AX6000-Baili-hanwckf/mt7986a-dsa-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
         cd openwrt
-        sed -i '/jdcloud,re-cp-03)/ {n; /lan1 lan2 lan3 lan4/ {s/lan1 lan2 lan3 lan4/eth0/; a\
-        \t\tucidef_add_switch "switch0" "1:lan" "2:lan" "3:lan" "4:lan" "6u@eth0"
-        }}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
+        sed -i '/jdcloud,re-cp-03)/ {n; /eth0/ {s/eth0/lan1 lan2 lan3 lan4/; n; /ucidef_add_switch/ d}}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
 
     - name: 使用luci-app-mtk无线配置
       if: github.event.inputs.APP_MTK == 'true'
@@ -191,7 +189,7 @@ jobs:
         if sed -n '/jdcloud,re-cp-03)/,/;;/p' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network | grep -q 'ucidef_add_switch "switch0"'; then
                 echo "SWITCH=-gsw" >> $GITHUB_ENV
         else
-                echo "SWITCH=" >> $GITHUB_ENV
+                echo "SWITCH=-dsa" >> $GITHUB_ENV
         fi
         if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
                 echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
