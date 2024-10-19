@@ -18,7 +18,7 @@ on:
         description: 'Set LAN IP Address'
         required: true
         default: '192.168.1.1'
-      DRIVER:
+      WIFI_DRIVER:
         description: 'Choose WiFi Driver'
         required: true
         default: 'v7.6.7.2'
@@ -155,14 +155,17 @@ jobs:
     - name: 设置WiFi驱动版本
       run: |
         cd openwrt
-        if [ ${{ github.event.inputs.DRIVER }} == 'v7.6.6.1' ]; then
+        if [ ${{ github.event.inputs.WIFI_DRIVER }} == 'v7.6.6.1' ]; then
                 sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
+                echo "Use WiFi Driver: v7.6.6.1"
+        else
+                echo "Use WiFi Driver: v7.6.7.2"
         fi
 
     - name: 使用nx30pro的高功率eeprom并固定WiFi MAC地址
       if: github.event.inputs.EEPROM == 'true'
       run: |
-        if [ ${{ github.event.inputs.DRIVER }} == 'v7.6.6.1' ]; then
+        if [ ${{ github.event.inputs.WIFI_DRIVER }} == 'v7.6.6.1' ]; then
                 cp RAX3000M-eMMC_XR30-eMMC-hanwckf/nx30pro_eeprom.bin openwrt/package/mtk/drivers/mt_wifi/files-7661/bin/mt7981/rebb/MT7981_iPAiLNA_EEPROM.bin
         else
                 cp RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20231229-4012a0_nx30pro_eeprom.tar.xz openwrt/dl/mt79xx_20231229-4012a0.tar.xz
@@ -217,10 +220,10 @@ jobs:
         
         sed -n 's/.*lan) ipad=${ipaddr:-"\([0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+\)"} ;;.*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
-        if grep -q 'CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y' .config; then
-                echo "DRIVER_VERSION=-v7672" >> $GITHUB_ENV
+        if grep -q 'CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y' .config; then
+                echo "WIFI_VERSION=-v7661" >> $GITHUB_ENV
         else
-                echo "DRIVER_VERSION=-v7661" >> $GITHUB_ENV
+                echo "WIFI_VERSION=-v7672" >> $GITHUB_ENV
         fi
         if [ ${{ github.event.inputs.EEPROM }} == 'true' ]; then
                 echo "EEPROM=-eeprom" >> $GITHUB_ENV
@@ -253,7 +256,7 @@ jobs:
         rm -rf packages
         sudo -E apt-get -qq install rename
         for val in "${devices[@]}"; do
-          rename "s/.*${val}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}${{ env.DRIVER_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}/" *
+          rename "s/.*${val}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}/" *
           echo "$val"
         done
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
@@ -263,7 +266,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.DRIVER_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
 
     - name: 生成固件Release标签
@@ -274,10 +277,10 @@ jobs:
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 使用分支：${{ env.REPO_BRANCH }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ "${{ env.DRIVER_VERSION }}" == '-v7672' ]]; then
-               echo "- 使用WiFi驱动版本v7.6.7.2" >> release.txt
-        else
+        if [[ "${{ env.WIFI_VERSION }}" == '-v7661' ]]; then
                echo "- 使用WiFi驱动版本v7.6.6.1" >> release.txt
+        else
+               echo "- 使用WiFi驱动版本v7.6.7.2" >> release.txt
         fi
         if [[ "${{ env.EEPROM }}" == '-eeprom' ]]; then
                echo "- 使用nx30pro高功率eeprom并固定WiFi MAC地址" >> release.txt
@@ -294,7 +297,7 @@ jobs:
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.DRIVER_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 发布固件至Release
@@ -304,6 +307,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.DRIVER_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt

@@ -18,7 +18,7 @@ on:
         description: 'Set LAN IP Address'
         required: true
         default: '192.168.1.1'
-      DRIVER:
+      WIFI_DRIVER:
         description: 'Choose WiFi Driver'
         required: true
         default: 'v7.6.7.2'
@@ -26,11 +26,14 @@ on:
         options:
         - v7.6.7.2
         - v7.6.6.1
-      DSA:
-        description: 'Use DSA Switch Driver'
+      SW_DRIVER:
+        description: 'Choose Switch Driver'
         required: true
-        default: false
-        type: boolean
+        default: 'GSW'
+        type: choice
+        options:
+        - GSW
+        - DSA
       APP_MTK:
         description: 'Use luci-app-mtk wifi config'
         required: true
@@ -145,16 +148,23 @@ jobs:
     - name: 设置WiFi驱动版本
       run: |
         cd openwrt
-        if [ ${{ github.event.inputs.DRIVER }} == 'v7.6.6.1' ]; then
+        if [ ${{ github.event.inputs.WIFI_DRIVER }} == 'v7.6.6.1' ]; then
                 sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
+                echo "Use WiFi Driver: v7.6.6.1"
+        else
+                echo "Use WiFi Driver: v7.6.7.2"
         fi
 
-    - name: 使用DSA交换机驱动
-      if: github.event.inputs.DSA == 'true'
+    - name: 设置交换机驱动
       run: |
-        cp JDCloud-AX6000-Baili-hanwckf/mt7986a-dsa-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
-        cd openwrt
-        sed -i '/jdcloud,re-cp-03)/ {n; /eth0/ {s/eth0/lan1 lan2 lan3 lan4/; n; /ucidef_add_switch/ d}}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
+        if [ ${{ github.event.inputs.SW_DRIVER }} == 'DSA' ]; then
+                cp JDCloud-AX6000-Baili-hanwckf/mt7986a-dsa-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
+                cd openwrt
+                sed -i '/jdcloud,re-cp-03)/ {n; /eth0/ {s/eth0/lan1 lan2 lan3 lan4/; n; /ucidef_add_switch/ d}}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
+                echo "Use Switch Driver: DSA"
+        else
+                echo "Use Switch Driver: GSW"
+        fi
 
     - name: 使用luci-app-mtk无线配置
       if: github.event.inputs.APP_MTK == 'true'
@@ -199,10 +209,10 @@ jobs:
         [ -s TARGET_NAME ] && echo "TARGET_NAME=$(cat TARGET_NAME)" >> $GITHUB_ENV
         sed -n 's/.*lan) ipad=${ipaddr:-"\([0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+\)"} ;;.*/\1/p' package/base-files/files/bin/config_generate | head -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
-        if grep -q 'CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y' .config; then
-                echo "DRIVER_VERSION=-v7672" >> $GITHUB_ENV
+        if grep -q 'CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y' .config; then
+                echo "WIFI_VERSION=-v7661" >> $GITHUB_ENV
         else
-                echo "DRIVER_VERSION=-v7661" >> $GITHUB_ENV
+                echo "WIFI_VERSION=-v7672" >> $GITHUB_ENV
         fi
         if sed -n '/jdcloud,re-cp-03)/,/;;/p' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network | grep -q 'ucidef_add_switch "switch0"'; then
                 echo "SWITCH=-gsw" >> $GITHUB_ENV
@@ -233,7 +243,7 @@ jobs:
         cd openwrt/bin/targets/*/*
         rm -rf packages
         sudo -E apt-get -qq install rename
-        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}/' *
+        rename 's/.*${{ env.DEVICE_NAME }}/${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}/' *
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -241,7 +251,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
 
     - name: 生成固件Release标签
@@ -252,10 +262,10 @@ jobs:
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 使用分支：${{ env.REPO_BRANCH }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ "${{ env.DRIVER_VERSION }}" == '-v7672' ]]; then
-               echo "- 使用WiFi驱动版本v7.6.7.2" >> release.txt
-        else
+        if [[ "${{ env.WIFI_VERSION }}" == '-v7661' ]]; then
                echo "- 使用WiFi驱动版本v7.6.6.1" >> release.txt
+        else
+               echo "- 使用WiFi驱动版本v7.6.7.2" >> release.txt
         fi
         if [[ "${{ env.SWITCH }}" == '-gsw' ]]; then
                echo "- 使用GSW交换机驱动（非DSA）" >> release.txt
@@ -272,7 +282,7 @@ jobs:
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 发布固件至Release
@@ -282,6 +292,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.DRIVER_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.DEVICE_NAME }}${{ env.WIFI_VERSION }}${{ env.SWITCH }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
