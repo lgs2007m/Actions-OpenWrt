@@ -21,11 +21,16 @@ on:
       WIFI_DRIVER:
         description: 'Choose WiFi Driver'
         required: true
-        default: 'v7.6.7.2'
+        default: 'v7.6.7.2-fw-20240823(recommend)'
         type: choice
         options:
-        - v7.6.7.2
-        - v7.6.6.1
+        - v7.6.7.2-fw-20240823(recommend)
+        - v7.6.6.1-fw-20230808(recommend)
+        - v7.6.7.2-fw-default
+        - v7.6.6.1-fw-default
+        - v7.6.6.1-fw-20221208
+        - v7.6.6.1-fw-20230421
+        - v7.6.6.1-fw-20231024
       SW_DRIVER:
         description: 'Choose Switch Driver'
         required: true
@@ -148,18 +153,25 @@ jobs:
     - name: 设置WiFi驱动版本
       run: |
         cd openwrt
-        if [ ${{ github.event.inputs.WIFI_DRIVER }} == 'v7.6.6.1' ]; then
+        wifi_driver=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+        firmware=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^.*-fw-([0-9]{8}).*/\1/')
+        if [ "$wifi_driver" == "v7.6.6.1" ]; then
                 sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
-                echo "Use WiFi Driver: v7.6.6.1"
+                if [ "$firmware" != "default" ]; then
+                        sed -i "/CONFIG_MTK_MT_WIFI_DRIVER_VERSION/a CONFIG_MTK_MT_WIFI_MT7986_${firmware}=y" .config
+                fi
         else
-                echo "Use WiFi Driver: v7.6.7.2"
+                if [ "$firmware" != "default" ]; then
+                        cp $GITHUB_WORKSPACE/JDCloud-AX6000-Baili-hanwckf/mt79xx_20231229-4012a0_mt7986-fw-20240823.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
+                fi
         fi
+        echo "Use WiFi Driver: $wifi_driver-fw-$firmware"
 
     - name: 设置交换机驱动
       run: |
+        cd openwrt
         if [ ${{ github.event.inputs.SW_DRIVER }} == 'DSA' ]; then
-                cp JDCloud-AX6000-Baili-hanwckf/mt7986a-dsa-jdcloud-re-cp-03.dts openwrt/target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
-                cd openwrt
+                cp $GITHUB_WORKSPACE/JDCloud-AX6000-Baili-hanwckf/mt7986a-dsa-jdcloud-re-cp-03.dts target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7986a-jdcloud-re-cp-03.dts
                 sed -i '/jdcloud,re-cp-03)/ {n; /eth0/ {s/eth0/lan1 lan2 lan3 lan4/; n; /ucidef_add_switch/ d}}' target/linux/mediatek/mt7986/base-files/etc/board.d/02_network
                 echo "Use Switch Driver: DSA"
         else
@@ -262,11 +274,7 @@ jobs:
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 使用分支：${{ env.REPO_BRANCH }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        if [[ "${{ env.WIFI_VERSION }}" == '-v7661' ]]; then
-               echo "- 使用WiFi驱动版本v7.6.6.1" >> release.txt
-        else
-               echo "- 使用WiFi驱动版本v7.6.7.2" >> release.txt
-        fi
+        echo "- 使用WiFi驱动${{ github.event.inputs.WIFI_DRIVER }}" >> release.txt
         if [[ "${{ env.SWITCH }}" == '-gsw' ]]; then
                echo "- 使用GSW交换机驱动（非DSA）" >> release.txt
         else
