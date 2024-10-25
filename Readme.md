@@ -24,8 +24,13 @@
 设置LAN IP地址（路由器登录地址），默认192.168.1.1。  
 
 - #### 2. Choose WiFi Driver
-默认使用WiFi驱动版本v7.6.7.2-fw-20240823(recommend)。mt_wifi的firmware可选，warp默认使用驱动自带，不可选。  
+默认使用WiFi驱动版本v7.6.7.2-fw-20240823(recommend)。  
+mt_wifi的firmware可选，warp默认使用v7.6.7.2配套的warp_20231229-5f71ec，firmware用驱动自带的，不可选。  
 驱动版本v7.6.7.2-fw-default不建议使用，我使用5G无线，电脑打CS2同时手机刷视频，CS2会延迟增高卡顿。  
+根据网络和ChatGPT查询，我理解：  
+mt_wifi是MediaTek的WiFi驱动程序，主要用于控制无线网络功能，提供WiFi协议栈支持、无线电控制、连接管理等。  
+warp是MediaTek的WiFi Warp Accelerator加速框架，通常用于WiFi网络数据处理的加速。  
+mt_wifi和warp中的固件（firmware）是驱动程序与无线芯片之间的中间层。它通常被加载到无线芯片中，以控制其硬件功能，管理无线协议并处理数据传输，会影响无线性能和稳定性。  
 v7.6.7.2-fw-20240823(recommend) 推荐，使用[mtk-openwrt-feeds(20240823)](https://git01.mediatek.com/plugins/gitiles/openwrt/feeds/mtk-openwrt-feeds/+/0fdbc0e6d84bbc0216da2842a494bdf01f745c6c)  
 v7.6.6.1-fw-20230808(recommend) 推荐，使用提取自TP-XDR6088固件的fw-20230808  
 v7.6.7.2-fw-default 使用驱动包自带firmware fw-20231229  
@@ -99,7 +104,7 @@ dd if=$(blkid -t PARTLABEL=factory -o device) of=/tmp/mmcblk0px_factory.bin conv
 ```
 
 ---
-## CMCC-RAX3000M-eMMC/CMCC-XR30-eMMC workflow 手动运行可选项：
+## RAX3000M-eMMC/XR30-eMMC workflow 手动运行可选项：
 - Set LAN IP Address
 - Choose WiFi Driver
 - [x] Use nx30pro eeprom and fixed WiFi MAC address
@@ -116,8 +121,12 @@ RAX3000Z增强版（XR30-eMMC）的eMMC默认使用52MHz频率
 
 - #### 2. Choose WiFi Driver
 默认使用WiFi驱动版本v7.6.7.2-fw-20240823(recommend)。mt_wifi的firmware可选，warp默认使用驱动自带，不可选。  
-驱动版本v7.6.7.2-fw-default在mt7986机子上，我使用5G无线，电脑打CS2同时手机刷视频，CS2会延迟增高卡顿。  
+mt_wifi的firmware可选，warp默认使用v7.6.7.2配套的warp_20231229-5f71ec，firmware用驱动自带的，不可选。  
 【mt7981的机子上未测试，建议直接使用推荐的选项。】  
+根据网络和ChatGPT查询，我理解：  
+mt_wifi是MediaTek的WiFi驱动程序，主要用于控制无线网络功能，提供WiFi协议栈支持、无线电控制、连接管理等。  
+warp是MediaTek的WiFi Warp Accelerator加速框架，通常用于WiFi网络数据处理的加速。  
+mt_wifi和warp中的固件（firmware）是驱动程序与无线芯片之间的中间层。它通常被加载到无线芯片中，以控制其硬件功能，管理无线协议并处理数据传输，会影响无线性能和稳定性。  
 v7.6.7.2-fw-20240823(recommend) 推荐，使用[mtk-openwrt-feeds(20240823)](https://git01.mediatek.com/plugins/gitiles/openwrt/feeds/mtk-openwrt-feeds/+/0fdbc0e6d84bbc0216da2842a494bdf01f745c6c)  
 v7.6.6.1-fw-20230306(recommend) 推荐，使用提取自H3C-NX30Pro固件的fw-20230306  
 v7.6.7.2-fw-default 使用驱动包自带firmware fw-20231229  
@@ -165,4 +174,3 @@ CONFIG_PACKAGE_luci-app-dockerman=y
 ### 感谢P3TERX的Actions-OpenWrt
 - [P3TERX](https://github.com/P3TERX/Actions-OpenWrt)
 [Read the details in my blog (in Chinese) | 中文教程](https://p3terx.com/archives/build-openwrt-with-github-actions.html)
-
