@@ -154,7 +154,7 @@ jobs:
       run: |
         cd openwrt
         wifi_driver=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-        firmware=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^.*-fw-([0-9]{8}).*/\1/')
+        firmware=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/.*fw-([0-9]{8}|default).*/\1/g')
         if [ "$wifi_driver" == "v7.6.6.1" ]; then
                 sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
                 if [ "$firmware" != "default" ]; then
