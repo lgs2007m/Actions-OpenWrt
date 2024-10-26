@@ -55,9 +55,11 @@ RAX3000M算力版旧版使用的是不加密的配置文件RAX3000M_XR30_cfg-ssh
 查看配置文件是否加密，使用[WinHex](https://www.ghxi.com/winhex.html)之类的二进制软件，查看文件开头有Salted__字符串，就是openssl的加盐加密。  
 或者直接当压缩文件用7z打开，能打开的是不加密的，打不开的一般是加密的，需要到固件代码中找加密命令和密码。  
 
-【注意】20240115/20240117等批次、最新批次的部分机子已经更换了配置文件加密方法，目前还没有大佬搞定这个密码，所以这部分机子是不能通过导入配置文件开启SSH的，只能通过TTL使用mtk_uartboot直接加载uboot到内存，直接刷uboot。 
+【注意】20240115/20240117等批次、最新批次的部分机子已经更换了配置文件加密方法，目前还没有大佬搞定这个密码，所以这部分机子是不能通过导入配置文件开启SSH的，只能通过TTL使用mtk_uartboot直接加载uboot到内存，直接刷uboot。  
 
-RAX3000M eMMC算力版和RAX3000Z增强版的分区是一样的，所以gpt分区表和备份分区通用。   
+2024.10.26我使用网友RAX3000Z增强版20240117的rootfs分区备份，直接unsquashfs后修改rc.local开启telnet并删除了shadow中root账户的密码，然后mksquashfs打包得到新的rootfs.bin，在闭源固件中SSH刷回去启动，再备份得到解锁telnet的配置文件RAX3000M_XR30_cfg-telnet-salted-20240117.conf。注意，新版已经直接删除了dropbear，所以没有SSH。需要的可以用我这个配置文件尝试下能不能解锁telnet。  
+
+RAX3000M eMMC算力版和RAX3000Z增强版的分区是一样的，所以gpt分区表和备份分区通用。  
 下面简单看下原厂分区的信息，不想了解的可以略过。  
 可以看到原厂有两个系统分区kernel、rootfs和kernel2、rootfs2，即双分区，共用一个256MB的rootfs_data。kernel、kernel2都是32MB，rootfs、rootfs2都只有64MB。  
 固件中kernel一般占3MB左右，分区表kernel分区32MB完全够用，但是rootfs大小限制了原厂双分区分区表刷固件的大小。  
@@ -122,6 +124,9 @@ root@RAX3000M:~# blkid
 因为rootfs_data分区比较大，所以先备份到/mnt/mmcblk0p12目录，再用WinSCP下载下来。  
 当然也可以压缩这个分区备份到tmp文件夹下，再用WinSCP下载下来。  
 
+如果原厂是新版固件，无法解锁SSH，可以尝试我的解锁telnet的配置文件RAX3000M_XR30_cfg-telnet-salted-20240117.conf  
+解锁telnet后，也使用下面命令备份分区，但是先不下载下来，后面刷闭源固件不要刷gpt分区表，先挂载最后那个分区下载下来。  
+
 提示：bl2在/dev/mmcblk0boot0，uboot在fip分区。  
 unpartitioned.bin是全0的空白文件，是为了后面可以使用备份的分区按顺序直接合并得到一个eMMC img镜像。  
 除更换eMMC，这个img基本用不到，不过还是全部分区备份为好。  
@@ -154,24 +159,32 @@ WinScp软件登录路由器，协议SCP，IP 192.168.10.1，端口22，点击高
 因为没有像京东云百里那样锁bl2，所以这里只刷uboot就行了。  
 RAX3000M算力版的uboot是mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241007.bin  
 RAX3000Z增强版的uboot是mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241007.bin  
-上传对应机型的单分区uboot文件到tmp文件夹，SSH输入命令验证md5：  
+
+如果原厂是新版固件，无法解锁SSH，可以尝试我的解锁telnet的配置文件RAX3000M_XR30_cfg-telnet-salted-20240117.conf  
+解锁telnet后，设置电脑网卡为固定IP 192.168.10.2/24（注意只使用一个网卡，无线也不要连接），然后打开hfs(HTTP File Server)软件，将对应uboot文件拖拽到软件，然后使用下面对应的命令下载到/tmp目录：
+```
+wget -P /tmp http://192.168.10.2/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241026.bin
+wget -P /tmp http://192.168.10.2/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241026.bin
+```
+如果是解锁了SSH则直接WinSCp之类的软件上传对应机型的单分区uboot文件到tmp文件夹。  
+SSH输入命令验证md5：  
 ```
 md5sum /tmp/mt7981_cmcc_*fip*.bin
 ```
-2024.10.07版的uboot，是编译输出的fip文件刷入fip分区后的分区备份，所以有2MB大小，md5sum是：  
+2024.10.26版的uboot，是编译输出的fip文件刷入fip分区后的分区备份，所以有2MB大小，md5sum是：  
 ```
 root@RAX3000M:~# md5sum /tmp/mt7981_cmcc_*fip*.bin
-0dae75b7aac3a2755b1b7e30760f6545  /tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241010.bin
-c876dddc7b989edc402abd434891a966  /tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241010.bin
+26ab5703bc760e5ec1e15815bc583dfd  /tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241026.bin
+2946aae3df18ee8b3f207ce1aee4fbef  /tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241026.bin
 ```
 核对上传uboot的md5正常后，输入命令刷写uboot所在的fip分区。  
 RAX3000M eMMC算力版用这个命令：  
 ```
-dd if=/tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241010.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
+dd if=/tmp/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241026.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
 ```
 RAX3000Z增强版用这个命令：  
 ```
-dd if=/tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241010.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
+dd if=/tmp/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241026.bin of=$(blkid -t PARTLABEL=fip -o device) conv=fsync
 ```
 验证fip分区的md5和刷入文件一样即可，输入命令：  
 ```
@@ -180,12 +193,12 @@ md5sum $(blkid -t PARTLABEL=fip -o device)
 RAX3000M eMMC算力版：  
 ```
 root@RAX3000M:~# md5sum $(blkid -t PARTLABEL=fip -o device)
-0dae75b7aac3a2755b1b7e30760f6545  /dev/mmcblk0p3
+26ab5703bc760e5ec1e15815bc583dfd  /dev/mmcblk0p3
 ```
 RAX3000Z增强版：  
 ```
 root@XR30:~# md5sum $(blkid -t PARTLABEL=fip -o device)
-c876dddc7b989edc402abd434891a966  /dev/mmcblk0p3
+2946aae3df18ee8b3f207ce1aee4fbef  /dev/mmcblk0p3
 ```
 到这里uboot已经刷好了，可以断电重启，进uboot刷我提供的ImmortalWrt固件，然后接着刷gpt分区表。  
 
@@ -203,10 +216,12 @@ dd if=$(blkid -t PARTLABEL=fip -o device) bs=512 count=4096 | md5sum
 
 - ### 3.刷gpt分区表
 原厂系统中fdisk写入修复分区表会报错，我建议在刷好uboot后直接断电按reset进uboot，刷一个小于60MB的op后再刷分区表。  
-建议用刷机教程中我提供的ImmortalWrt固件，已集成sgdisk，后面新建分区需要用到。如果用其他固件请自行安装sgdisk。  
-电脑需要设置ip 192.168.1.2/24，连接网线到路由器lan口，路由上电按reset按键，等待灯变为蓝色，说明uboot webui已启动，可以松开按钮。  
+建议用刷机教程中我提供的ImmortalWrt闭源固件，地址192.168.1.1，已集成sgdisk，后面新建分区需要用到。如果用其他固件请自行安装sgdisk。  
+电脑网卡设置固定IP 192.168.1.2/24，连接网线到路由器lan口，路由上电按reset按键，等待灯变为蓝色，说明uboot webui已启动，可以松开按钮。  
 浏览器打开192.168.1.1，上传固件刷写成功后绿灯会亮3秒，然后重启。注意：其他大佬的uboot可能指示灯不一样。  
-此时电脑ip和dns可以设置回自动获取，然后等待OP系统启动后再操作刷gpt分区表。  
+此时电脑ip和dns可以设置回自动获取，然后等待系统启动后再操作刷gpt分区表。  
+
+如果原厂是新版固件，使用我的解锁telnet的配置文件解锁telnet的，这里先不要刷gpt分区表，查看挂载点，挂载最后那个大分区，然后使用WinSCP之类的软件，将备份的分区下载下来，再进行刷gpt分区表。  
 
 RAX3000M eMMC算力版和RAX3000Z增强版的gpt分区表通用。  
 我的gpt分区表没有最后一个data大分区，需要在刷完分区表后使用sgdisk命令新建data分区。 
@@ -311,9 +326,9 @@ mt798x eMMC机子的bl2在boot0硬件分区，不受userdata硬件分区的gpt�
 
 - ### 4.uboot刷固件、格式化data分区和切换固件
 我改的这个uboot不支持DHCP，电脑需要设置ip 192.168.1.2/24，连接网线到路由器lan口，路由上电按reset，等待灯变为蓝色，说明uboot webui已启动，可以松开按钮，浏览器打开192.168.1.1，上传固件刷写成功后绿灯会亮3秒，然后重启。注意：其他大佬的uboot可能指示灯不一样。  
-我改的这个uboot是2024.10.10编译的：  
-RAX3000M算力版：U-Boot 2022.07-rc3 (Oct 10 2024 - 14:22:45 +0800)  
-RAX3000Z增强版：U-Boot 2022.07-rc3 (Oct 10 2024 - 14:23:04 +0800)  
+我改的这个uboot是2024.10.26编译的：  
+RAX3000M算力版：U-Boot 2022.07-rc3 (Oct 26 2024 - 22:24:03 +0800)  
+RAX3000Z增强版：U-Boot 2022.07-rc3 (Oct 26 2024 - 22:24:13 +0800)  
 
 进入uboot webui页面后，最下方会显示这个编译日期，可以作为判断是否刷的是我改的uboot的标识。  
 uboot不仅可以刷固件，还可以更新bl2、uboot和gpt，打开相应网页即可，非必要不需要更新：  
@@ -341,6 +356,8 @@ mkfs.ext4 $(blkid -t PARTLABEL=data -o device)
 
 直接uboot刷闭源固件(.bin格式Legacy image)或者openwrt、immortalwrt主线master/23.05分支固件(.itb格式FIT image)，可以直接启动。  
 【注意】openwrt、immortalwrt主线master/23.05分支固件(.itb格式FIT image)固件第一次启动有点慢，特别是集成docker的固件，第一次启动可能需要5分钟，耐心等待，后面再启动就快了。  
+【注意】由于主线RAX3000M-NAND和RAX3000M-eMMC使用all in fit，一个固件集合了NAND和eMMC固件，启动时需要选择对应的fdt才可正常启动eMMC的固件。我已通过uboot自动判断，如果从kernel分区启动闭源固件(.bin格式Legacy image)则删除这个环境变量，如果从production分区启动主线master/23.05分支固件(.itb格式FIT image)，则设置bootconf config-1#mt7981b-cmcc-rax3000m-emmc，这个是自动的。  
+【注意】主线目前还没有XR30和RAX3000Z增强版（XR30-eMMC）支持，所以我设置bootconf直接使用config-1#mt7981b-cmcc-rax3000m-emmc，能支持主线RAX3000M-eMMC固件启动，但主线支持XR30-eMMC后是不能启动的，得修改uboot源码，改这个bootconf设置。XR30-eMMC比RAX3000M-eMMC少一个LED，XR30-eMMC的eMMC可以跑52MHz，RAX3000M-eMMC的eMMC跑26MHz。  
 
 uboot刷机是不保留配置的，如果已经刷好两种固件不想重刷，可以在系统里修改环境变量，重启即可切换启动的固件，配置保留。  
 当前在openwrt、immortalwrt主线master/23.05分支固件(.itb格式FIT image)，要切换到闭源固件(.bin格式Legacy image)  
