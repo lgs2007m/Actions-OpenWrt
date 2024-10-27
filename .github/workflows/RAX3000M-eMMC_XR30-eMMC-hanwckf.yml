@@ -27,11 +27,17 @@ on:
         - v7.6.7.2-fw-20240823(recommend)
         - v7.6.6.1-fw-20230306(recommend)
         - v7.6.7.2-fw-default
+        - v7.6.7.2-fw-20230306
+        - v7.6.7.2-fw-20230330
+        - v7.6.7.2-fw-20230411
+        - v7.6.7.2-fw-20230717
+        - v7.6.7.2-fw-20231024
         - v7.6.6.1-fw-default
         - v7.6.6.1-fw-20230330
         - v7.6.6.1-fw-20230411
         - v7.6.6.1-fw-20230717
         - v7.6.6.1-fw-20231024
+        - v7.6.6.1-fw-20240823
       EEPROM:
         description: 'Use nx30pro eeprom and fixed WiFi MAC address'
         required: true
@@ -165,13 +171,11 @@ jobs:
         firmware=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/.*fw-([0-9]{8}|default).*/\1/g')
         if [ "$wifi_driver" == "v7.6.6.1" ]; then
                 sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
-                if [ "$firmware" != "default" ]; then
-                        sed -i "/CONFIG_MTK_MT_WIFI_DRIVER_VERSION/a CONFIG_MTK_MT_WIFI_MT7981_${firmware}=y" .config
-                fi
+        fi
+        if [ "$firmware" == "default" ]; then
+                sed -i 's/CONFIG_MTK_MT_WIFI_MT7981_20240823=y/CONFIG_MTK_MT_WIFI_MT7981_DEFAULT_FIRMWARE=y/g' .config
         else
-                if [ "$firmware" != "default" ]; then
-                        cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20231229-4012a0_mt7981-fw-20240823.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-                fi
+        	sed -i 's/CONFIG_MTK_MT_WIFI_MT7981_20240823=y/CONFIG_MTK_MT_WIFI_MT7981_${firmware}=y/g' .config
         fi
         echo "Use WiFi Driver: $wifi_driver-fw-$firmware"
 
@@ -180,15 +184,10 @@ jobs:
       run: |
         cd openwrt
         wifi_driver=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-        firmware=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/.*fw-([0-9]{8}|default).*/\1/g')
         if [ "$wifi_driver" == "v7.6.6.1" ]; then
-                cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/nx30pro_eeprom.bin package/mtk/drivers/mt_wifi/files-7661/bin/mt7981/rebb/MT7981_iPAiLNA_EEPROM.bin
+                cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20220907-8b55f5_eeprom.tar.xz dl/mt79xx_20220907-8b55f5.tar.xz
         else
-                if [ "$firmware" != "default" ]; then
-                        cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20231229-4012a0_mt7981-fw-20240823_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-                else                
-                        cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-                fi
+                cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
         fi
         ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
         echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
