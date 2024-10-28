@@ -55,9 +55,34 @@ RAX3000M算力版旧版使用的是不加密的配置文件RAX3000M_XR30_cfg-ssh
 查看配置文件是否加密，使用[WinHex](https://www.ghxi.com/winhex.html)之类的二进制软件，查看文件开头有Salted__字符串，就是openssl的加盐加密。  
 或者直接当压缩文件用7z打开，能打开的是不加密的，打不开的一般是加密的，需要到固件代码中找加密命令和密码。  
 
-【注意】20240115/20240117等批次、最新批次的部分机子已经更换了配置文件加密方法，目前还没有大佬搞定这个密码，所以这部分机子是不能通过导入配置文件开启SSH的，只能通过TTL使用mtk_uartboot直接加载uboot到内存，直接刷uboot。  
+【原厂新版固件配置文件加解密】  
+20240115/20240117等批次、最新批次的部分机子是新固件，已经更换了配置文件加密密码，经过[lyq1996](https://github.com/lyq1996)大佬逆向，发现新密码是根据SN生成的，所以每台机子不一样。感谢 @lyq1996 大佬！  
 
-2024.10.26我使用网友RAX3000Z增强版20240117的rootfs分区备份，直接unsquashfs后修改rc.local开启telnet并删除了shadow中root账户的密码，然后mksquashfs打包得到新的rootfs.bin，在闭源固件中SSH刷回去启动，再备份得到解锁telnet的配置文件RAX3000M_XR30_cfg-telnet-salted-20240117.conf。注意，新版已经直接删除了dropbear，所以没有SSH。需要的可以用我这个配置文件尝试下能不能解锁telnet。  
+新版原厂固件已经删除了dropbear，所以我做了一个开启telnet的配置备份文件RAX3000M_XR30_cfg-telnet-20240117.conf，这个配置文件是没有加密的，需要使用命令根据机子的SN加密得到最终的配置文件，再上传导入配置，等待重启后即可解锁telnet。  
+
+使用openwrt、ubuntu、WSL等linux系统，对我做的配置文件RAX3000M_XR30_cfg-telnet-20240117.conf进行加密，得到解锁telnet的配置文件cfg_import_config_file_new.conf。Windows系统也可以安装Cygwin来运行。  
+将我做的配置文件放到linux系统中，在文件所在目录打开终端（或者打开终端，使用cd命令打开文件所在路径），然后修改SN为你机子的，再运行命令：  
+```
+SN=081116000043333
+mypassword=$(openssl passwd -1 -salt aV6dW8bD "$SN")
+mypassword=$(eval "echo $mypassword")
+echo $mypassword
+openssl aes-256-cbc -pbkdf2 -k "$mypassword" -in RAX3000M_XR30_cfg-telnet-20240117.conf -out cfg_import_config_file_new.conf
+```
+命令没有报错即可，就得到新版加密配置文件了。  
+
+如果想自己修改配置文件，可以用下面命令解密配置文件（需先生成密码）：
+```
+openssl aes-256-cbc -d -pbkdf2 -k "$mypassword" -in cfg_export_config_file.conf -out cfg_import_config_file_decrypt.conf
+```
+
+Windows系统也可以安装Cygwin来运行上面的命令：  
+64位在线安装程序：https://www.cygwin.com/setup-x86_64.exe  
+32位在线安装程序：https://www.cygwin.com/setup-x86.exe  
+直接运行一路下一步，安装好之后运行Cygwin，输入df命令查看挂载路径。比如E盘对应的是/cygdrive/e，输入命令`cd /cygdrive/e`打开E盘路径。  
+将我做的配置文件放到E盘根目录，然后修改SN再用上面的命令加密配置文件。  
+
+如果所有方法都不行，那终极大招是通过TTL使用mtk_uartboot直接加载uboot到内存，直接刷uboot。 
 
 RAX3000M eMMC算力版和RAX3000Z增强版的分区是一样的，所以gpt分区表和备份分区通用。  
 下面简单看下原厂分区的信息，不想了解的可以略过。  
@@ -124,8 +149,8 @@ root@RAX3000M:~# blkid
 因为rootfs_data分区比较大，所以先备份到/mnt/mmcblk0p12目录，再用WinSCP下载下来。  
 当然也可以压缩这个分区备份到tmp文件夹下，再用WinSCP下载下来。  
 
-如果原厂是新版固件，无法解锁SSH，可以尝试我的解锁telnet的配置文件RAX3000M_XR30_cfg-telnet-salted-20240117.conf  
-解锁telnet后，也使用下面命令备份分区，但是先不下载下来，后面刷闭源固件不要刷gpt分区表，先挂载最后那个分区下载下来。  
+如果原厂是新版固件，无法解锁SSH，使用解锁telnet的配置文件解锁telnet后，也可以使用下面命令备份分区，但是先不下载下来，后面刷闭源固件不要刷gpt分区表，先挂载最后那个分区下载下来。  
+telnet登录路由器，协议选telnet，地址192.168.10.1，端口23，直接点连接，账号密码都是没有的。  
 
 提示：bl2在/dev/mmcblk0boot0，uboot在fip分区。  
 unpartitioned.bin是全0的空白文件，是为了后面可以使用备份的分区按顺序直接合并得到一个eMMC img镜像。  
@@ -160,8 +185,7 @@ WinScp软件登录路由器，协议SCP，IP 192.168.10.1，端口22，点击高
 RAX3000M算力版的uboot是mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241007.bin  
 RAX3000Z增强版的uboot是mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241007.bin  
 
-如果原厂是新版固件，无法解锁SSH，可以尝试我的解锁telnet的配置文件RAX3000M_XR30_cfg-telnet-salted-20240117.conf  
-解锁telnet后，设置电脑网卡为固定IP 192.168.10.2/24（注意只使用一个网卡，无线也不要连接），然后打开hfs(HTTP File Server)软件，将对应uboot文件拖拽到软件，然后使用下面对应的命令下载到/tmp目录：
+如果原厂是新版固件，无法解锁SSH，使用解锁telnet的配置文件解锁telnet后，设置电脑网卡为固定IP 192.168.10.2/24（注意只使用一个网卡，无线也不要连接），然后打开hfs(HTTP File Server)软件，将对应uboot文件拖拽到软件，然后使用下面对应的命令下载到/tmp目录：
 ```
 wget -P /tmp http://192.168.10.2/mt7981_cmcc_rax3000m-emmc-fip_legacy-and-fit_20241026.bin
 wget -P /tmp http://192.168.10.2/mt7981_cmcc_xr30-emmc-fip_legacy-and-fit_20241026.bin
@@ -221,7 +245,7 @@ dd if=$(blkid -t PARTLABEL=fip -o device) bs=512 count=4096 | md5sum
 浏览器打开192.168.1.1，上传固件刷写成功后绿灯会亮3秒，然后重启。注意：其他大佬的uboot可能指示灯不一样。  
 此时电脑ip和dns可以设置回自动获取，然后等待系统启动后再操作刷gpt分区表。  
 
-如果原厂是新版固件，使用我的解锁telnet的配置文件解锁telnet的，这里先不要刷gpt分区表，查看挂载点，挂载最后那个大分区，然后使用WinSCP之类的软件，将备份的分区下载下来，再进行刷gpt分区表。  
+如果原厂是新版固件，无法解锁SSH，使用解锁telnet的配置文件解锁telnet，这里先不要刷gpt分区表，查看挂载点，挂载最后那个大分区，然后使用WinSCP之类的软件，将备份的分区下载下来，再进行刷gpt分区表。  
 
 RAX3000M eMMC算力版和RAX3000Z增强版的gpt分区表通用。  
 我的gpt分区表没有最后一个data大分区，需要在刷完分区表后使用sgdisk命令新建data分区。 
