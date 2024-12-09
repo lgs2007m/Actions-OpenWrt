@@ -15,16 +15,14 @@ diff --git a/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-re-s
 similarity index 94%
 rename from target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-re-ss-01.dts
 rename to target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-ax1800-pro.dts
-index 3a4ec3caa..cd219f4c3 100644
+index c09f77e65..e6272abfb 100644
 --- a/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-re-ss-01.dts
 +++ b/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6000-ax1800-pro.dts
-@@ -10,15 +10,15 @@
- #include <dt-bindings/input/input.h>
+@@ -11,14 +11,14 @@
  
  / {
--	model = "JDCloud RE-SS-01";
+ 	model = "JDCloud RE-SS-01 (AX1800 Pro)";
 -	compatible = "jdcloud,re-ss-01", "qcom,ipq6018";
-+	model = "JDCloud AX1800 Pro";
 +	compatible = "jdcloud,ax1800-pro", "qcom,ipq6018";
  
  	aliases {
@@ -43,16 +41,14 @@ diff --git a/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6010-re-c
 similarity index 96%
 rename from target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6010-re-cs-02.dts
 rename to target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6010-ax6600.dts
-index a7ec1be5f..17037a44f 100644
+index 436f8127e..85cba0765 100644
 --- a/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6010-re-cs-02.dts
 +++ b/target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6010-ax6600.dts
-@@ -10,16 +10,16 @@
- #include <dt-bindings/input/input.h>
+@@ -11,15 +11,15 @@
  
  / {
--	model = "JDCloud RE-CS-02";
+ 	model = "JDCloud RE-CS-02 (AX6600)";
 -	compatible = "jdcloud,re-cs-02", "qcom,ipq6018";
-+	model = "JDCloud AX6600";
 +	compatible = "jdcloud,ax6600", "qcom,ipq6018";
  
  	aliases {
@@ -69,7 +65,7 @@ index a7ec1be5f..17037a44f 100644
  		ethernet0 = "/soc/dp1";
  		ethernet1 = "/soc/dp2";
 diff --git a/target/linux/qualcommax/image/ipq60xx.mk b/target/linux/qualcommax/image/ipq60xx.mk
-index 14c6f11e1..f709502eb 100644
+index 4f2e29b50..d24348743 100644
 --- a/target/linux/qualcommax/image/ipq60xx.mk
 +++ b/target/linux/qualcommax/image/ipq60xx.mk
 @@ -18,9 +18,8 @@ define Device/UbiFit
@@ -93,19 +89,25 @@ index 14c6f11e1..f709502eb 100644
  	$(call Device/FitImage)
  	$(call Device/EmmcImage)
  	DEVICE_VENDOR := JDCloud
-@@ -73,9 +72,9 @@ define Device/jdcloud_re-cs-02
+@@ -73,7 +72,7 @@ define Device/jdcloud_re-cs-02
  	DEVICE_DTS_CONFIG := config@cp03-c3
  	DEVICE_PACKAGES := ipq-wifi-jdcloud_ax6600 kmod-ath11k-pci ath11k-firmware-qcn9074
  endef
 -TARGET_DEVICES += jdcloud_re-cs-02
 +TARGET_DEVICES += jdcloud_ax6600
  
+ define Device/jdcloud_re-cs-07
+ 	$(call Device/FitImage)
+@@ -88,7 +87,7 @@ define Device/jdcloud_re-cs-07
+ endef
+ TARGET_DEVICES += jdcloud_re-cs-07
+ 
 -define Device/jdcloud_re-ss-01
 +define Device/jdcloud_ax1800-pro
  	$(call Device/FitImage)
  	$(call Device/EmmcImage)
  	DEVICE_VENDOR := JDCloud
-@@ -86,7 +85,7 @@ define Device/jdcloud_re-ss-01
+@@ -99,7 +98,7 @@ define Device/jdcloud_re-ss-01
  	DEVICE_DTS_CONFIG := config@cp03-c2
  	DEVICE_PACKAGES := ipq-wifi-jdcloud_ax1800pro
  endef
@@ -115,13 +117,13 @@ index 14c6f11e1..f709502eb 100644
  define Device/linksys_mr7350
  	$(call Device/FitImage)
 diff --git a/target/linux/qualcommax/ipq60xx/base-files/etc/board.d/02_network b/target/linux/qualcommax/ipq60xx/base-files/etc/board.d/02_network
-index fc123c9a1..4266cd42a 100644
+index 348437b84..f50a76149 100644
 --- a/target/linux/qualcommax/ipq60xx/base-files/etc/board.d/02_network
 +++ b/target/linux/qualcommax/ipq60xx/base-files/etc/board.d/02_network
-@@ -12,14 +12,14 @@ ipq60xx_setup_interfaces()
- 
+@@ -13,14 +13,14 @@ ipq60xx_setup_interfaces()
  	case "$board" in
  	cmiot,ax18|\
+ 	jdcloud,re-cs-07|\
 -	jdcloud,re-ss-01|\
 +	jdcloud,ax1800-pro|\
  	qihoo,360v6|\
@@ -175,7 +177,7 @@ index 34b91f4df..0ce0a4860 100644
  		mmc_part=$(find_mmc_part 0:ART)
  		FIRMWARE=""ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin""
 diff --git a/target/linux/qualcommax/ipq60xx/base-files/lib/upgrade/platform.sh b/target/linux/qualcommax/ipq60xx/base-files/lib/upgrade/platform.sh
-index e199c33c1..3960287cb 100644
+index 6cb255df7..4973bdbec 100644
 --- a/target/linux/qualcommax/ipq60xx/base-files/lib/upgrade/platform.sh
 +++ b/target/linux/qualcommax/ipq60xx/base-files/lib/upgrade/platform.sh
 @@ -17,8 +17,8 @@ platform_do_upgrade() {
@@ -183,8 +185,9 @@ index e199c33c1..3960287cb 100644
  		nand_do_upgrade "$1"
  		;;
 -	jdcloud,re-cs-02|\
--	jdcloud,re-ss-01|\
 +	jdcloud,ax6600|\
+ 	jdcloud,re-cs-07|\
+-	jdcloud,re-ss-01|\
 +	jdcloud,ax1800-pro|\
  	redmi,ax5-jdcloud)
  		kernelname="0:HLOS"
