@@ -18,31 +18,31 @@ on:
         description: 'Set LAN IP Address'
         required: true
         default: '192.168.1.1'
-      WIFI_DRIVER:
-        description: 'Choose WiFi Driver'
-        required: true
-        default: 'v7.6.7.2-fw-20240823(recommend)'
-        type: choice
-        options:
-        - v7.6.7.2-fw-20240823(recommend)
-        - v7.6.6.1-fw-20230306(recommend)
-        - v7.6.7.2-fw-default
-        - v7.6.7.2-fw-20230306
-        - v7.6.7.2-fw-20230330
-        - v7.6.7.2-fw-20230411
-        - v7.6.7.2-fw-20230717
-        - v7.6.7.2-fw-20231024
-        - v7.6.6.1-fw-default
-        - v7.6.6.1-fw-20230330
-        - v7.6.6.1-fw-20230411
-        - v7.6.6.1-fw-20230717
-        - v7.6.6.1-fw-20231024
-        - v7.6.6.1-fw-20240823
-      EEPROM:
-        description: 'Use nx30pro eeprom and fixed WiFi MAC address'
-        required: true
-        default: true
-        type: boolean
+      #WIFI_DRIVER:
+        #description: 'Choose WiFi Driver'
+        #required: true
+        #default: 'v7.6.7.2-fw-20240823(recommend)'
+       # type: choice
+        #options:
+        #- v7.6.7.2-fw-20240823(recommend)
+        #- v7.6.6.1-fw-20230306(recommend)
+        #- v7.6.7.2-fw-default
+        #- v7.6.7.2-fw-20230306
+        #- v7.6.7.2-fw-20230330
+        #- v7.6.7.2-fw-20230411
+        #- v7.6.7.2-fw-20230717
+        #- v7.6.7.2-fw-20231024
+        #- v7.6.6.1-fw-default
+        #- v7.6.6.1-fw-20230330
+        #- v7.6.6.1-fw-20230411
+        #- v7.6.6.1-fw-20230717
+        #- v7.6.6.1-fw-20231024
+        #- v7.6.6.1-fw-20240823
+      #EEPROM:
+        #description: 'Use nx30pro eeprom and fixed WiFi MAC address'
+        #required: true
+        #default: true
+        #type: boolean
       APP_MTK:
         description: 'Use luci-app-mtk wifi config'
         required: true
@@ -63,12 +63,12 @@ on:
 env:
   ###############手动修改##############
   ##因为是两个设备，所以手动设置上传时候的打包名称和tag名称UPLOAD_TAG_NAME
-  OPENWRT_NAME: hanwckf
+  OPENWRT_NAME: airjinkela
   UPLOAD_TAG_NAME: rax3000m-emmc_xr30-emmc
-  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
-  REPO_BRANCH: openwrt-21.02
+  REPO_URL: https://github.com/airjinkela/immortalwrt-main
+  REPO_BRANCH: master
   FEEDS_CONF: RAX3000M-eMMC_XR30-eMMC-hanwckf/feeds.conf.default
-  RAX3000M_EMMC_DTS_FILE: target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-cmcc-rax3000m-emmc.dts
+  RAX3000M_EMMC_DTS_FILE: target/linux/mediatek/dts/mt7981b-cmcc-xr30-emmc-mod.dtss
   CONFIG_FILE: RAX3000M-eMMC_XR30-eMMC-hanwckf/.mtwifi-cfg.config
   DIY_P1_SH: RAX3000M-eMMC_XR30-eMMC-hanwckf/diy-part1.sh
   DIY_P2_SH: RAX3000M-eMMC_XR30-eMMC-hanwckf/diy-part2.sh
@@ -79,7 +79,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     permissions:
       contents: write
@@ -143,12 +143,12 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    - name: 设置RAX3000M-eMMC的eMMC使用highspeed
-      run: |
-        cd openwrt
-        if ! grep -q 'cap-mmc-highspeed' "${{ env.RAX3000M_EMMC_DTS_FILE }}"; then
-                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.RAX3000M_EMMC_DTS_FILE }}"
-        fi
+    #- name: 设置RAX3000M-eMMC的eMMC使用highspeed
+      #run: |
+        #cd openwrt
+        #if ! grep -q 'cap-mmc-highspeed' "${{ env.RAX3000M_EMMC_DTS_FILE }}"; then
+                #sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "${{ env.RAX3000M_EMMC_DTS_FILE }}"
+        #fi
 
     - name: 设置LAN IP地址（路由器登录地址）
       run: |
@@ -164,39 +164,39 @@ jobs:
             echo "Invalid IP address, use default."
         fi
 
-    - name: 设置WiFi驱动版本
-      run: |
-        cd openwrt
-        wifi_driver=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-        firmware=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/.*fw-([0-9]{8}|default).*/\1/g')
-        if [ "$wifi_driver" == "v7.6.6.1" ]; then
-                sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
-        fi
-        if [ "$firmware" == "default" ]; then
-                sed -i 's/CONFIG_MTK_MT_WIFI_MT7981_20240823=y/CONFIG_MTK_MT_WIFI_MT7981_DEFAULT_FIRMWARE=y/g' .config
-        else
-        	sed -i 's/CONFIG_MTK_MT_WIFI_MT7981_20240823=y/CONFIG_MTK_MT_WIFI_MT7981_${firmware}=y/g' .config
-        fi
-        echo "Use WiFi Driver: $wifi_driver-fw-$firmware"
+    #- name: 设置WiFi驱动版本
+      #run: |
+        #cd openwrt
+        #wifi_driver=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+        #firmware=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/.*fw-([0-9]{8}|default).*/\1/g')
+        #if [ "$wifi_driver" == "v7.6.6.1" ]; then
+                #sed -i 's/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7672=y/CONFIG_MTK_MT_WIFI_DRIVER_VERSION_7661=y/g' .config
+        #fi
+        #if [ "$firmware" == "default" ]; then
+                #sed -i 's/CONFIG_MTK_MT_WIFI_MT7981_20240823=y/CONFIG_MTK_MT_WIFI_MT7981_DEFAULT_FIRMWARE=y/g' .config
+        #else
+        	#sed -i 's/CONFIG_MTK_MT_WIFI_MT7981_20240823=y/CONFIG_MTK_MT_WIFI_MT7981_${firmware}=y/g' .config
+        #fi
+        #echo "Use WiFi Driver: $wifi_driver-fw-$firmware"
 
-    - name: 使用nx30pro的高功率eeprom并固定WiFi MAC地址
-      if: github.event.inputs.EEPROM == 'true'
-      run: |
-        cd openwrt
-        wifi_driver=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-        if [ "$wifi_driver" == "v7.6.6.1" ]; then
-                cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20220907-8b55f5_eeprom.tar.xz dl/mt79xx_20220907-8b55f5.tar.xz
-        else
-                cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
-        fi
+    #- name: 使用nx30pro的高功率eeprom并固定WiFi MAC地址
+      #if: github.event.inputs.EEPROM == 'true'
+      #run: |
+        #cd openwrt
+        #wifi_driver=$(echo "${{ github.event.inputs.WIFI_DRIVER }}" | sed -E 's/^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+        #if [ "$wifi_driver" == "v7.6.6.1" ]; then
+                #cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20220907-8b55f5_eeprom.tar.xz dl/mt79xx_20220907-8b55f5.tar.xz
+        #else
+                #cp $GITHUB_WORKSPACE/RAX3000M-eMMC_XR30-eMMC-hanwckf/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
+        #fi
         ## 创建一个辅助文件。文件内容是写入MAC地址到dat文件，固定wifi MAC地址
-        echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
-        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7981.dbdc.b0.dat
-        \t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
-        \t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7981.dbdc.b1.dat" > temp_insert.txt
+        #echo -e "\t\tlocal wifi0_mac=\"\$(mmc_get_mac_binary factory 0x04)\"
+        #\t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi0_mac/;b;}; \\\$aMacAddress=\$wifi0_mac\" /etc/wireless/mediatek/mt7981.dbdc.b0.dat
+        #\t\tlocal wifi1_mac=\"\$(macaddr_setbit_la \$wifi0_mac)\"
+        #\t\tsed -i \"/^MacAddress=.*/ {s/.*/MacAddress=\$wifi1_mac/;b;}; \\\$aMacAddress=\$wifi1_mac\" /etc/wireless/mediatek/mt7981.dbdc.b1.dat" > temp_insert.txt
         ## 将文本内容写入02_network
-        sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
-        }}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+        #sed -i '/mediatek_setup_macs()/,/\};/ {/cmcc,rax3000m-emmc)/ {n;n;n;r temp_insert.txt
+        #}}' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
 
     - name: 使用luci-app-mtk无线配置
       if: github.event.inputs.APP_MTK == 'true'
