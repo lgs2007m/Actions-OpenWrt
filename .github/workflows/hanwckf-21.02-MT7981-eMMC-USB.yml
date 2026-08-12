@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 ###############手动修改##############
-name: CLX-S20P-hanwckf
+name: hanwckf-21.02_MT7981-eMMC-USB
 
 on:
   repository_dispatch:
@@ -33,19 +33,24 @@ on:
         type: choice
         options:
         - v7.6.7.2-fw-20240823(recommend)
-        - v7.6.6.1-fw-20230808(recommend)
+        - v7.6.6.1-fw-20230306(recommend)
         - v7.6.7.2-fw-default
-        - v7.6.7.2-fw-20221208
         - v7.6.7.2-fw-20230306
-        - v7.6.7.2-fw-20230421
-        - v7.6.7.2-fw-20230808
+        - v7.6.7.2-fw-20230330
+        - v7.6.7.2-fw-20230411
+        - v7.6.7.2-fw-20230717
         - v7.6.7.2-fw-20231024
         - v7.6.6.1-fw-default
-        - v7.6.6.1-fw-20221208
-        - v7.6.6.1-fw-20230306
-        - v7.6.6.1-fw-20230421
+        - v7.6.6.1-fw-20230330
+        - v7.6.6.1-fw-20230411
+        - v7.6.6.1-fw-20230717
         - v7.6.6.1-fw-20231024
         - v7.6.6.1-fw-20240823
+      EEPROM:
+        description: 'Use nx30pro eeprom'
+        required: true
+        default: true
+        type: boolean
       APP_MTK:
         description: 'Use luci-app-mtk wifi config'
         required: true
@@ -66,14 +71,14 @@ on:
 env:
   ###############手动修改##############
   ##手动设置上传时候的打包名称和tag名称UPLOAD_TAG_NAME
-  OPENWRT_NAME: hanwckf
-  UPLOAD_TAG_NAME: clx-s20p
+  OPENWRT_NAME: hanwckf-21.02
+  UPLOAD_TAG_NAME: mt7981-emmc-usb
   REPO_URL: https://github.com/lgs2007m/immortalwrt-mt798x
   REPO_BRANCH: ${{ github.event.inputs.REPO_BRANCH || 'v7672' }}
-  FEEDS_CONF: CLX-S20P-hanwckf/feeds.conf.default
-  CONFIG_FILE: CLX-S20P-hanwckf/.mtwifi-cfg.config
-  DIY_P1_SH: CLX-S20P-hanwckf/diy-part1.sh
-  DIY_P2_SH: CLX-S20P-hanwckf/diy-part2.sh
+  FEEDS_CONF: hanwckf-21.02/MT7981-eMMC-USB/feeds.conf.default
+  CONFIG_FILE: hanwckf-21.02/MT7981-eMMC-USB/.mtwifi-cfg.config
+  DIY_P1_SH: hanwckf-21.02/MT7981-eMMC-USB/diy-part1.sh
+  DIY_P2_SH: hanwckf-21.02/MT7981-eMMC-USB/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -146,6 +151,14 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
+    - name: 设置RAX3000M-eMMC的eMMC使用highspeed
+      run: |
+        cd openwrt
+        DTS_FILE=$(find target/linux/mediatek -name "mt7981-cmcc-rax3000m-emmc.dts" | head -n 1)
+        if [ -f "$DTS_FILE" ] && ! grep -q 'cap-mmc-highspeed' "$DTS_FILE"; then
+                sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' "$DTS_FILE"
+        fi
+
     - name: 设置LAN IP地址（路由器登录地址）
       run: |
         cd openwrt
@@ -170,6 +183,13 @@ jobs:
         sed -i "s/^\(CONFIG_MTK_MT_WIFI_DRIVER_VERSION_\)[0-9]\{4\}/\1${version_num}/g" .config
         [ "$firmware" == "default" ] && firmware="DEFAULT_FIRMWARE"
         sed -i "s/^\(CONFIG_MTK_MT_WIFI_MT798[168]\)_[0-9]\{8\}=y/\1_${firmware}=y/g" .config
+
+    - name: 使用nx30pro的高功率eeprom
+      if: github.event.inputs.EEPROM == 'true'
+      run: |
+        cd openwrt
+        cp $GITHUB_WORKSPACE/hanwckf-21.02/MT7981-eMMC-USB/mt79xx_20220907-8b55f5_eeprom.tar.xz dl/mt79xx_20220907-8b55f5.tar.xz
+        cp $GITHUB_WORKSPACE/hanwckf-21.02/MT7981-eMMC-USB/mt79xx_20231229-4012a0_eeprom.tar.xz dl/mt79xx_20231229-4012a0.tar.xz
 
     - name: 使用luci-app-mtk无线配置
       if: github.event.inputs.APP_MTK == 'true'
@@ -219,6 +239,11 @@ jobs:
                 grep -q 'CONFIG_MTK_MT_WIFI_MT798[168]_DEFAULT_FIRMWARE=y' .config && \
                 echo "MT_WIFI_FW=-default" >> $GITHUB_ENV
         fi
+        if [ ${{ github.event.inputs.EEPROM }} == 'true' ]; then
+                echo "EEPROM=-eeprom" >> $GITHUB_ENV
+        else
+                echo "EEPROM=" >> $GITHUB_ENV
+        fi
         if grep -q 'CONFIG_PACKAGE_mtwifi-cfg=y' .config; then
                 echo "WIFI_INTERFACE=-mtwifi" >> $GITHUB_ENV
         else
@@ -250,7 +275,7 @@ jobs:
                 for file in *"${val}"*; do
                         if [ -f "$file" ]; then
                                 suffix="${file#*${val}}"
-                                new_name="${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}${{ env.WIFI_VERSION }}${{ env.BUILD_DOCKERMAN }}${suffix}"
+                                new_name="${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}${suffix}"
                                 mv "$file" "$new_name"
                                 echo "  Renamed: $file -> $new_name"
                         fi
@@ -263,7 +288,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}
         path: ${{ env.FIRMWARE }}
 
     - name: 生成固件Release标签
@@ -275,6 +300,11 @@ jobs:
         echo "- 使用分支：${{ env.REPO_BRANCH }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
         echo "- 使用WiFi驱动: mt_wifi${{ env.WIFI_VERSION }}-fw${{ env.MT_WIFI_FW }}" >> release.txt
+        if [[ "${{ env.EEPROM }}" == '-eeprom' ]]; then
+               echo "- 使用nx30pro高功率eeprom" >> release.txt
+        else
+               echo "- 未使用nx30pro高功率eeprom" >> release.txt
+        fi
         if [[ "${{ env.WIFI_INTERFACE }}" == '-mtwifi' ]]; then
                 echo "- 使用hanwckf mtwifi-cfg原生luci无线配置工具" >> release.txt
         else
@@ -285,7 +315,7 @@ jobs:
         else
                 echo "- 未编译luci-app-dockerman" >> release.txt
         fi
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 发布固件至Release
@@ -295,6 +325,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.BUILD_DOCKERMAN }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.WIFI_VERSION }}${{ env.EEPROM }}${{ env.BUILD_DOCKERMAN }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt

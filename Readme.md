@@ -1,16 +1,28 @@
-# 借助 GitHub Actions 的 OpenWrt 在线自动编译.
+# ImmortalWrt MT798X 路由器固件在线自动编译
 
-#### hanwckf大佬mt798x闭源仓库- [hanwckf/immortalwrt-mt798x](https://github.com/hanwckf/immortalwrt-mt798x).
+### MTK万能串口救砖：[MediaTek Filogic 系列路由器串口救砖教程](https://www.cnblogs.com/p123/p/18046679)
+### 我的刷机教程：[Tutorial](https://github.com/lgs2007m/Actions-OpenWrt/tree/main/Tutorial) 可直接下载包含教程的刷机文件：[Router-Flashing-Files](https://github.com/lgs2007m/Actions-OpenWrt/releases/tag/Router-Flashing-Files)
 
-#### 237大佬mt798x闭源仓库- [padavanonly/immortalwrt-mt798x](https://github.com/padavanonly/immortalwrt-mt798x).
+---
+<details>
+<summary><h2>24.10固件编译说明</h2></summary>
+  
+#### 237大佬24.10 mt798x闭源仓库- [padavanonly/immortalwrt-mt798x-6.6](https://github.com/padavanonly/immortalwrt-mt798x-6.6).
+
+#### 237大佬24.10 mt7988分之闭源仓库- [padavanonly/immortalwrt-mt798x-6.6;mt798x-mt799x-6.6-mtwifi](https://github.com/padavanonly/immortalwrt-mt798x-6.6/tree/mt798x-mt799x-6.6-mtwifi).
+
+</details>
+
+---
+<details>
+<summary><h2>21.02固件编译说明</h2></summary>
+
+#### hanwckf大佬21.02 mt798x闭源仓库- [hanwckf/immortalwrt-mt798x](https://github.com/hanwckf/immortalwrt-mt798x).
+
+#### 237大佬21.02 mt798x闭源仓库- [padavanonly/immortalwrt-mt798x](https://github.com/padavanonly/immortalwrt-mt798x).
 
 #### hanwckf大佬mt798x uboot仓库- [hanwckf/bl-mt798x](https://github.com/hanwckf/bl-mt798x).
 
-### 刷砖也不怕！可以通过串口救砖：[MediaTek Filogic 系列路由器串口救砖教程](https://www.cnblogs.com/p123/p/18046679)
-
-### 我的刷机教程：[Tutorial](https://github.com/lgs2007m/Actions-OpenWrt/tree/main/Tutorial)
-### 包含教程的刷机文件：[Router-Flashing-Files](https://github.com/lgs2007m/Actions-OpenWrt/releases/tag/Router-Flashing-Files)
----
 ## MT7986 hanwckf workflow 手动运行可选项：
 <details>
 <summary>展开详细</summary>
@@ -199,6 +211,7 @@ cat /proc/warp_ctrl/warp0/wo
 不使用独立fem无线功放的MT7981B路由器可以通过替换高功率的eeprom提高信号强度。  
 RAX3000M/XR30的factory eeprom设置功率不高，2.4G是23dBm、5G是22dBm，使用NX30 PRO的高功率eeprom，2.4G可提升至25dBm、5G提升至24dBm。  
 开启该选项会使用NX30 PRO的eeprom替换掉固件中的MT7981_iPAiLNA_EEPROM.bin文件。  
+如果是SPI NAND机型，还需要删除对应驱动下的这个补丁文件package/mtk/drivers/mt_wifi/patches-76xx/001-eeprom-flash-api.patch。  
 
 - #### 5. Use luci-app-mtk wifi config
 该选项默认关闭，即按.mtwifi-cfg.config配置文件，使用mtwifi-cfg配置工具，需要使用旧的luci-app-mtk无线配置工具请打钩。  
@@ -215,6 +228,7 @@ CONFIG_PACKAGE_lua-cjson=y
 该选项默认关闭，即按.mtwifi-cfg.config配置文件编译dockerman，不需要编译dockerman请打钩。  
 .mtwifi-cfg.config配置文件中已设置编译dockerman：  
 CONFIG_PACKAGE_luci-app-dockerman=y  
+</details>
 </details>
 
 ---
