@@ -9,7 +9,7 @@
   
 #### 237大佬24.10 mt798x闭源仓库- [padavanonly/immortalwrt-mt798x-6.6](https://github.com/padavanonly/immortalwrt-mt798x-6.6).
 
-#### 237大佬24.10 mt7988分之闭源仓库- [padavanonly/immortalwrt-mt798x-6.6;mt798x-mt799x-6.6-mtwifi](https://github.com/padavanonly/immortalwrt-mt798x-6.6/tree/mt798x-mt799x-6.6-mtwifi).
+#### 237大佬24.10 mt7988分支闭源仓库- [padavanonly/immortalwrt-mt798x-6.6;mt798x-mt799x-6.6-mtwifi](https://github.com/padavanonly/immortalwrt-mt798x-6.6/tree/mt798x-mt799x-6.6-mtwifi).
 
 </details>
 

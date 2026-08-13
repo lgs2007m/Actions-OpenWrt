@@ -18,6 +18,10 @@ on:
         description: 'Set LAN IP Address'
         required: true
         default: '192.168.6.1'
+      Default_Theme:
+        description: 'Manually Set Default Theme'
+        required: true
+        default: 'fluent'
       ssh:
         description: 'SSH connection to Actions'
         required: false
@@ -95,7 +99,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
-    - name: 更新 & DIY_P2_SH & 安装 feeds
+    - name: 更新feeds & DIY_P2_SH & 安装 feeds
       run: |
         chmod +x $DIY_P2_SH
         cd openwrt
@@ -120,6 +124,26 @@ jobs:
         else
             echo "Invalid IP address, use default."
         fi
+
+    - name: 设置默认主题
+      run: |
+        cd openwrt
+        THEME_NAME="${{ github.event.inputs.Default_Theme }}"
+        cat > package/base-files/files/etc/uci-defaults/99-set-default-theme << EOF
+        #!/bin/sh
+        
+        THEME="$THEME_NAME"
+        
+        if [ -d "/www/luci-static/\$THEME" ]; then
+        	uci set luci.main.mediaurlbase="/luci-static/\$THEME"
+        	uci commit luci
+        fi
+        
+        exit 0
+        EOF
+        chmod +x package/base-files/files/etc/uci-defaults/99-set-default-theme
+        echo "Default theme set to: $THEME_NAME"
+        cat package/base-files/files/etc/uci-defaults/99-set-default-theme
 
     - name: SSH链接管理
       uses: P3TERX/ssh2actions@v1.0.0
@@ -190,7 +214,7 @@ jobs:
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 使用分支：${{ env.REPO_BRANCH }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}$" >> $GITHUB_OUTPUT
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 发布固件至Release
