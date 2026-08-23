@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 ###############手动修改##############
-name: padavanonly-24.10_JDCloud-AX6000-Baili
+name: padavanonly-24.10_CLX-S20P
 
 on:
   repository_dispatch:
@@ -33,13 +33,13 @@ env:
   ###############手动修改##############
   ##手动设置上传时候的打包名称和tag名称UPLOAD_TAG_NAME
   OPENWRT_NAME: padavanonly-24.10
-  UPLOAD_TAG_NAME: jdcloud_re-cp-03
+  UPLOAD_TAG_NAME: supergateway_s20p
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
   REPO_BRANCH: openwrt-24.10-6.6
-  FEEDS_CONF: padavanonly-24.10/JDCloud-AX6000-Baili/feeds.conf.default
-  CONFIG_FILE: padavanonly-24.10/JDCloud-AX6000-Baili/.mtwifi-cfg.dae.config
-  DIY_P1_SH: padavanonly-24.10/JDCloud-AX6000-Baili/diy-part1.sh
-  DIY_P2_SH: padavanonly-24.10/JDCloud-AX6000-Baili/diy-part2.sh
+  FEEDS_CONF: padavanonly-24.10/CLX-S20P/feeds.conf.default
+  CONFIG_FILE: padavanonly-24.10/CLX-S20P/.mtwifi-cfg.dae.config
+  DIY_P1_SH: padavanonly-24.10/CLX-S20P/diy-part1.sh
+  DIY_P2_SH: padavanonly-24.10/CLX-S20P/diy-part2.sh
   SSH_ACTIONS: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -104,7 +104,7 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         ./scripts/feeds update -a
-        cp $GITHUB_WORKSPACE/padavanonly-24.10/JDCloud-AX6000-Baili/fix.patch fix.patch
+        cp $GITHUB_WORKSPACE/padavanonly-24.10/CLX-S20P/fix.patch fix.patch
         git apply fix.patch
         $GITHUB_WORKSPACE/$DIY_P2_SH
         ./scripts/feeds install -a
