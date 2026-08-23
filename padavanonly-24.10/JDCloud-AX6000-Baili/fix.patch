@@ -1,0 +1,79 @@
+diff --git a/package/boot/uboot-envtools/files/mediatek_filogic b/package/boot/uboot-envtools/files/mediatek_filogic
+index d2bea6ef0e..fd5bb2cd24 100644
+--- a/package/boot/uboot-envtools/files/mediatek_filogic
++++ b/package/boot/uboot-envtools/files/mediatek_filogic
+@@ -71,7 +71,9 @@ glinet,gl-xe3000|\
+ nradio,c8-668gl|\
+ sl,3000-emmc|\
+ umi,uax3000e|\
+-huasifei,wh3000-emmc)
++huasifei,wh3000-emmc|\
++jdcloud,re-cp-03|\
++supergateway,s20*)
+ 	local envdev=$(find_mmc_part "u-boot-env")
+ 	ubootenv_add_uci_config "$envdev" "0x0" "0x80000"
+ 	;;
+@@ -86,10 +88,8 @@ cmcc,rax3000m|\
+ bt,r320|\
+ bt,rb300|\
+ cmcc,rax3000me|\
+-jdcloud,re-cp-03|\
+ konka,komi-a31|\
+-sn,r1|\
+-supergateway,s20*)
++sn,r1)
+ 	. /lib/upgrade/fit.sh
+ 	export_fitblk_bootdev
+ 	case "$CI_METHOD" in
+diff --git a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+index 7b07f83f78..12806ad384 100644
+--- a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
++++ b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+@@ -259,6 +259,22 @@ mediatek_setup_macs()
+ 		lan_mac=$(macaddr_add $wan_mac 1)
+ 		label_mac=$lan_mac
+ 		;;
++ 	jdcloud,re-cp-03 |\
++	supergateway,s20p)
++		lan_mac=$(mmc_get_mac_binary factory 0x2a)
++		wan_mac=$(mmc_get_mac_binary factory 0x24)
++		label_mac=$lan_mac
++		local b0dat="$(l1dat if2dat ra0)"
++		local b1dat="$(l1dat if2dat rax0)"
++		if [ -f ${b0dat} ] && ! grep -q "MacAddress=" ${b0dat}; then
++			local b0mac="$(mmc_get_mac_binary factory 0x04)"
++			echo "MacAddress=$b0mac" >> ${b0dat}
++		fi
++		if [ -f ${b1dat} ] && ! grep -q "MacAddress=" ${b1dat}; then
++			local b1mac="$(macaddr_setbit_la $b0mac)"
++			echo "MacAddress=$b1mac" >> ${b1dat}
++		fi
++ 		;;
+ 	sl,3000-emmc)
+  		lan_mac=$(mmc_get_mac_binary factory 0x04)		
+  		wan_mac=$(macaddr_add "$lan_mac" -2)
+@@ -269,7 +285,7 @@ mediatek_setup_macs()
+ 		wan_mac=$(macaddr factory $lan_mac 1)
+ 		label_mac=$wan_mac
+ 		;;
+-    sn,r1)
++	sn,r1)
+ 		lan_mac=$(mmc_get_mac_binary factory 0x2a)
+ 		wan_mac=$(mmc_get_mac_binary factory 0x24)
+ 		label_mac=$wan_mac
+diff --git a/target/linux/mediatek/filogic/base-files/lib/preinit/90_extract_caldata b/target/linux/mediatek/filogic/base-files/lib/preinit/90_extract_caldata
+index a867014616..19e4ae6106 100755
+--- a/target/linux/mediatek/filogic/base-files/lib/preinit/90_extract_caldata
++++ b/target/linux/mediatek/filogic/base-files/lib/preinit/90_extract_caldata
+@@ -22,6 +22,11 @@ do_extract_caldata() {
+ 		caldata_validate && exit 0
+ 		caldata_extract_mmc "factory" 0x0 0x1000
+ 		;;
++	supergateway,s20p)
++		FIRMWARE=MT7986_iPAiLNA_EEPROM_AX6000.bin
++		caldata_validate && exit 0
++		caldata_extract_mmc "factory" 0x0 0x1000
++		;;
+ 	glinet,gl-mt6000|\
+ 	jdcloud,re-cp-03)
+ 		FIRMWARE=MT7986_ePAeLNA_EEPROM_AX6000.bin
