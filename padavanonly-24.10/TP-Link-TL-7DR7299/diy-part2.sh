@@ -51,7 +51,7 @@ sed -i '/myddns_ipv4/,$d' feeds/packages/net/ddns-scripts/files/etc/config/ddns
 ##-----------------Display fixed frequency info for MT7988A-----------------
 sed -i '/"mediatek"\/\*|"mvebu"\/\*)/i "mediatek/filogic_a73")\n\tcpu_freq="1.8GHz" ;;' package/emortal/autocore/files/generic/cpuinfo
 ##-----------------Remove password------------------
-sed -i 's/^root:.*$/root::0:0:99999:7:::/' package/base-files/files/etc/shadow
+sed -i 's/^root:.*$/root:::0:99999:7:::/' package/base-files/files/etc/shadow
 
 ##-----------------Fix 10G Ethernet LED configuration------------------
 sed -i '

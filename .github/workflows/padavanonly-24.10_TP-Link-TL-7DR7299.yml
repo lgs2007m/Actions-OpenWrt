@@ -99,7 +99,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
-    - name: 更新feeds & DIY_P2_SH & 安装 feeds
+    - name: 更新feeds & DIY_P2_SH & 安装feeds
       run: |
         chmod +x $DIY_P2_SH
         cd openwrt
