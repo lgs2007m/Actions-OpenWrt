@@ -11,17 +11,13 @@
 #
 
 rm -rf feeds/packages/net/open-app-filter
-git clone https://github.com/destan19/OpenAppFilter package/luci-app-oaf
+git clone https://github.com/destan19/OpenAppFilter package/OpenAppFilter
 ##-----Update golang for luci-app-openlist2------
 rm -rf feeds/packages/lang/golang
 git clone https://github.com/sbwml/packages_lang_golang -b 25.x feeds/packages/lang/golang
-git clone https://github.com/sbwml/luci-app-openlist2 package/luci-app-openlist2
+git clone https://github.com/sbwml/luci-app-openlist2 package/openlist
 git clone https://github.com/EasyTier/luci-app-easytier package/luci-app-easytier
-git clone https://github.com/gdy666/luci-app-lucky package/luci-app-lucky
-git clone https://github.com/LazuliKao/luci-theme-fluent package/luci-theme-fluent
-git clone https://github.com/eamonxg/luci-theme-shadcn package/luci-theme-shadcn
-rm -rf feeds/luci/themes/luci-theme-argon
-git clone https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
+git clone https://github.com/gdy666/luci-app-lucky package/lucky
 ##-----Fix nginx.config for luci-app-quickfile------
 cat > feeds/packages/net/nginx-util/files/nginx.config << 'EOF'
 
@@ -35,10 +31,12 @@ config server '_lan'
 	list include 'conf.d/*.locations'
 	option access_log 'off; # logd openwrt'
 EOF
-git clone https://github.com/sbwml/luci-app-quickfile package/luci-app-quickfile
-# Modify default IP
-#sed -i 's/192.168.6.1/192.168.1.1/g' package/base-files/files/bin/config_generate
-
+git clone https://github.com/sbwml/luci-app-quickfile package/quickfile
+git clone --depth=1 https://github.com/LazuliKao/luci-theme-fluent /tmp/luci-theme-fluent
+cp -a /tmp/luci-theme-fluent/package/* package/
+git clone https://github.com/eamonxg/luci-theme-shadcn package/luci-theme-shadcn
+rm -rf feeds/luci/themes/luci-theme-argon
+git clone https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 ##-----------------Add OpenClash meta core------------------
 curl -sL -m 30 --retry 2 https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-arm64.tar.gz -o /tmp/clash.tar.gz
 tar zxvf /tmp/clash.tar.gz -C /tmp >/dev/null 2>&1
