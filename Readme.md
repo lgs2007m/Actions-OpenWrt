@@ -11,6 +11,19 @@
 
 #### 237大佬24.10 mt7988分支闭源仓库- [padavanonly/immortalwrt-mt798x-6.6;mt798x-mt799x-6.6-mtwifi](https://github.com/padavanonly/immortalwrt-mt798x-6.6/tree/mt798x-mt799x-6.6-mtwifi).
 
+- Set LAN IP Address
+- Manually Set Default Theme
+
+- #### 说明
+openwrt-24.10-6.6分支中5G Wi-Fi的MAC地址无法设置，会自动使用2.4G的MAC进行置位得到5G MAC，2.4G的MAC可以使用向b0dat配置文件添加MacAddress的方法设置，未找到5G MAC被修改的地方，暂时无法修改。  
+mt798x-mt799x-6.6-mtwifi分支编译出来的7dr7299固件，使用发现两个问题：1.无线桥接无法使用；2.设置无线参数保存并应用，有线网口会重启。  
+
+- #### 1. Set LAN IP Address
+设置LAN IP地址（路由器登录地址），默认192.168.6.1。  
+
+- #### 2. Manually Set Default Theme
+设置[Fluent主题](https://github.com/LazuliKao/luci-theme-fluent)为默认主题，当编译配置config有多个主题也可以设置其它主题为默认主题，比如Argon、Design。  
+
 </details>
 
 ---

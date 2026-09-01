@@ -33,7 +33,7 @@ env:
   ###############手动修改##############
   ##手动设置上传时候的打包名称和tag名称UPLOAD_TAG_NAME
   OPENWRT_NAME: padavanonly-24.10
-  UPLOAD_TAG_NAME: jdcloud_re-cp-03
+  UPLOAD_TAG_NAME: mt7986-nand-usb
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
   REPO_BRANCH: openwrt-24.10-6.6
   FEEDS_CONF: padavanonly-24.10/MT7986-NAND-USB/feeds.conf.default
