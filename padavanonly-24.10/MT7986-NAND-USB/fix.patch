@@ -1,0 +1,45 @@
+diff --git a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+old mode 100644
+new mode 100755
+index 7b07f83f78..7e1d546b9d
+--- a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
++++ b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+@@ -254,10 +254,35 @@ mediatek_setup_macs()
+ 		wan_mac=$label_mac
+ 		lan_mac=$(macaddr_add "$label_mac" 1)
+ 		;;
+-	yvr,x6)
+-		wan_mac=$(mtd_get_mac_ascii Factory_info MAC)
+-		lan_mac=$(macaddr_add $wan_mac 1)
++	yvr,x6*)
++		lan_mac=$(mtd_get_mac_ascii Factory_info MAC)
++		wan_mac=$(macaddr_add $lan_mac 1)
+ 		label_mac=$lan_mac
++		local b0dat="$(l1dat if2dat ra0)"
++		local b1dat="$(l1dat if2dat rax0)"
++		if [ -f ${b0dat} ] && ! grep -q "MacAddress=" ${b0dat}; then
++			local b0mac="$(macaddr_add $label_mac 2)"
++			echo "MacAddress=$b0mac" >> ${b0dat}
++		fi
++		if [ -f ${b1dat} ] && ! grep -q "MacAddress=" ${b1dat}; then
++			local b1mac="$(macaddr_setbit_la $b0mac)"
++			echo "MacAddress=$b1mac" >> ${b1dat}
++		fi
++		;;
++ 	tplink,tl-xdr6086|\
++ 	tplink,tl-xdr6088)
++		lan_mac=$(mtd_get_mac_binary config 0x1c)
++		wan_mac=$(macaddr_add "$lan_mac" 1)
++		local b0dat="$(l1dat if2dat ra0)"
++		local b1dat="$(l1dat if2dat rax0)"
++		if [ -f ${b0dat} ] && ! grep -q "MacAddress=" ${b0dat}; then
++			local b0mac="$lan_mac"
++			echo "MacAddress=$b0mac" >> ${b0dat}
++		fi
++		if [ -f ${b1dat} ] && ! grep -q "MacAddress=" ${b1dat}; then
++			local b1mac="$(macaddr_add $lan_mac 2)"
++			echo "MacAddress=$b1mac" >> ${b1dat}
++		fi
+ 		;;
+ 	sl,3000-emmc)
+  		lan_mac=$(mmc_get_mac_binary factory 0x04)		
