@@ -22,6 +22,11 @@ on:
         description: 'Manually Set Default Theme'
         required: true
         default: 'fluent'
+      EEPROM:
+        description: 'Use xdr6078 eeprom'
+        required: true
+        default: true
+        type: boolean
       ssh:
         description: 'SSH connection to Actions'
         required: false
@@ -147,6 +152,13 @@ jobs:
         echo "Default theme set to: $THEME_NAME"
         cat package/base-files/files/etc/uci-defaults/99-set-default-theme
 
+    - name: 使用xdr6078的高功率eeprom
+      if: github.event.inputs.EEPROM == 'true'
+      run: |
+        cd openwrt
+        sed -i 's/CONFIG_MTK_MT7986_NEW_FW=y/# CONFIG_MTK_MT7986_NEW_FW is not set/g' .config
+        grep "CONFIG_MTK_MT7986_NEW_FW" .config
+
     - name: SSH链接管理
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -171,6 +183,11 @@ jobs:
         make -j$(nproc) || make -j1 || make -j1 V=s
         sed -n '/lan)/,/addr_offset++/ s/.*${ipaddr:-"\([0-9.]\+\)"}.*/\1/p' package/base-files/files/bin/config_generate | tail -n 1 > IP_ADDR
         [ -s IP_ADDR ] && echo "IP_ADDR=$(cat IP_ADDR)" >> $GITHUB_ENV
+        if grep -q 'CONFIG_MTK_MT7986_NEW_FW=y' .config; then
+                echo "EEPROM=" >> $GITHUB_ENV
+        else
+                echo "EEPROM=-eeprom" >> $GITHUB_ENV
+        fi
         echo "FILE_DATE=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -192,7 +209,7 @@ jobs:
                 for file in *"${val}"*; do
                         if [ -f "$file" ]; then
                                 suffix="${file#*${val}}"
-                                new_name="${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}${suffix}"
+                                new_name="${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${val}${{ env.EEPROM }}${suffix}"
                                 mv "$file" "$new_name"
                                 echo "  Renamed: $file -> $new_name"
                         fi
@@ -205,7 +222,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.EEPROM }}
         path: ${{ env.FIRMWARE }}
 
     - name: 生成固件Release标签
@@ -216,7 +233,12 @@ jobs:
         echo "- 使用源码：${{ env.REPO_URL }}" >> release.txt
         echo "- 使用分支：${{ env.REPO_BRANCH }}" >> release.txt
         echo "- 登录地址：${{ env.IP_ADDR }}" >> release.txt
-        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}" >> $GITHUB_OUTPUT
+        if [[ "${{ env.EEPROM }}" == '-eeprom' ]]; then
+               echo "- 使用xdr6078高功率eeprom" >> release.txt
+        else
+               echo "- 未使用高功率eeprom" >> release.txt
+        fi
+        echo "release_tag=${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.EEPROM }}" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 发布固件至Release
@@ -226,6 +248,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}
+        name: ${{ env.FILE_DATE }}-${{ env.OPENWRT_NAME }}-${{ env.UPLOAD_TAG_NAME }}${{ env.EEPROM }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt

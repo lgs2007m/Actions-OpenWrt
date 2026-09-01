@@ -13,6 +13,7 @@
 
 - Set LAN IP Address
 - Manually Set Default Theme
+- Use xdr6078 eeprom(only for CLX-S20P)
 
 - #### 说明
 openwrt-24.10-6.6分支中5G Wi-Fi的MAC地址无法设置，会自动使用2.4G的MAC进行置位得到5G MAC，2.4G的MAC可以使用向b0dat配置文件添加MacAddress的方法设置，未找到5G MAC被修改的地方，暂时无法修改。  
@@ -23,6 +24,12 @@ mt798x-mt799x-6.6-mtwifi分支编译出来的7dr7299固件，使用发现两个�
 
 - #### 2. Manually Set Default Theme
 设置[Fluent主题](https://github.com/LazuliKao/luci-theme-fluent)为默认主题，当编译配置config有多个主题也可以设置其它主题为默认主题，比如Argon、Design。  
+
+- #### 3. Use xdr6078 eeprom(only for CLX-S20P)
+默认使用TP的xdr6078的高功率eeprom，2.4G可提升至25dBm、5G提升至24dBm。  
+对于使用mt7975无线芯片内置功放的AX6000机型，可以替换MT7986_iPAiLNA_EEPROM_AX6000.bin来取代机子原来的eeprom，进而提高无线功率，外置功放不能使用该方法。  
+开启该选项会将名为MT7986_iPAiLNA_EEPROM_AX6000.bin的TP xdr6078的eeprom拷贝固件的firmware文件夹中，驱动检测到该文件并查询文件中的MAC是有效的，就不会从factory读取原机的eeprom了。  
+如果是SPI NAND机型，还需要删除对应驱动下的这个补丁文件package/mtk/drivers/mt_wifi/patches-76xx/001-eeprom-flash-api.patch，237大佬的仓库已做好这些步骤，内置功放想要用高功率eeprom，只需要将编译配置文件config中的CONFIG_MTK_MT7986_NEW_FW=y注释掉即可。  
 
 </details>
 
