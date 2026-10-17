@@ -14,7 +14,7 @@ rm -rf feeds/packages/net/open-app-filter
 git clone https://github.com/destan19/OpenAppFilter package/OpenAppFilter
 ##-----Update golang for luci-app-openlist2------
 rm -rf feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_golang -b 25.x feeds/packages/lang/golang
+git clone https://github.com/sbwml/packages_lang_golang -b 26.x feeds/packages/lang/golang
 git clone https://github.com/sbwml/luci-app-openlist2 package/openlist
 git clone https://github.com/EasyTier/luci-app-easytier package/luci-app-easytier
 git clone https://github.com/gdy666/luci-app-lucky package/lucky
